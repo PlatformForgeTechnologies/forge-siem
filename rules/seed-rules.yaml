@@ -1,0 +1,44 @@
+- title: SSH brute force
+  severity: high
+  mitre_tags: [T1110]
+  sigma_yaml: |
+    title: SSH brute force
+    id: 4018a053-92cb-43f5-8ea6-98d2b3b55501
+    status: experimental
+    logsource:
+      product: linux
+      service: sshd
+    detection:
+      selection:
+        message|contains: "Failed password"
+      condition: selection
+
+- title: Successful login after repeated failures
+  severity: high
+  mitre_tags: [T1078]
+  sigma_yaml: |
+    title: Successful login after repeated failures
+    id: 55bff6e8-fd3f-49d0-93f7-1c850367cb90
+    logsource:
+      product: linux
+      service: sshd
+    detection:
+      success:
+        message|contains: "Accepted password"
+      condition: success
+
+- title: /etc/passwd or /etc/shadow modified
+  severity: critical
+  mitre_tags: [T1098]
+  sigma_yaml: |
+    title: Critical account database modified
+    id: fdb93049-f01e-4632-a670-e68e3dd0d736
+    logsource:
+      product: linux
+      category: file_event
+    detection:
+      selection:
+        path|contains:
+          - /etc/passwd
+          - /etc/shadow
+      condition: selection

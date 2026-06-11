@@ -1,0 +1,11 @@
+.git
+.gitignore
+.gocache
+node_modules
+dashboard/node_modules
+dist
+dashboard/dist
+tmp
+*.log
+README.md
+docs-architecture.md

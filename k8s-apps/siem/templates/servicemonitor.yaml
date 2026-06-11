@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: siem-services
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      siem.metrics: "true"
+  endpoints:
+    - port: metrics
+      path: /metrics

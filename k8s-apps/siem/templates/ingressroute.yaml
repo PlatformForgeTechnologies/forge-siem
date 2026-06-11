@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: siem-dashboard-allowlist
+  namespace: {{ .Values.namespace }}
+spec:
+  ipAllowList:
+    sourceRange:
+{{ toYaml .Values.dashboard.allowedCIDRs | indent 6 }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: siem-dashboard
+  namespace: {{ .Values.namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ .Values.dashboard.host }}`)
+      kind: Rule
+      middlewares:
+        - name: siem-dashboard-allowlist
+      services:
+        - name: siem-dashboard
+          port: 80

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siem-dashboard
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.dashboard.replicas }}
+  selector:
+    matchLabels:
+      app: siem-dashboard
+  template:
+    metadata:
+      labels:
+        app: siem-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: {{ .Values.images.dashboard }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.dashboard.service.targetPort }}
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siem-dashboard
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: siem-dashboard
+  ports:
+    - port: {{ .Values.dashboard.service.port }}
+      targetPort: http
+      name: http

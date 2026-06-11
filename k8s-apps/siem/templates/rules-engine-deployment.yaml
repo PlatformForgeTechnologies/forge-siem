@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siem-rules-engine
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.rulesEngine.replicas }}
+  selector:
+    matchLabels:
+      app: siem-rules-engine
+  template:
+    metadata:
+      labels:
+        app: siem-rules-engine
+    spec:
+      containers:
+        - name: rules-engine
+          image: {{ .Values.images.rulesEngine }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: REDIS_ADDRESS
+              value: {{ printf "%s:%v" .Values.global.redis.host .Values.global.redis.port | quote }}
+            - name: REDIS_DB
+              value: {{ .Values.global.redis.db | quote }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.redis.usernameSecretKey }}
+                  optional: true
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.redis.passwordSecretKey }}
+                  optional: true
+            - name: POSTGRES_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.postgres.dsnSecretKey }}
+          ports:
+            - containerPort: 9090
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siem-rules-engine
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: siem-rules-engine
+    siem.metrics: "true"
+spec:
+  selector:
+    app: siem-rules-engine
+  ports:
+    - port: 9090
+      targetPort: metrics
+      name: metrics

@@ -1,0 +1,39 @@
+server:
+  host: siem-ingest.internal
+  port: 1514
+  ca_cert: /etc/siem/ca.crt
+  client_cert: /etc/siem/agent.crt
+  client_key: /etc/siem/agent.key
+
+log_collection:
+  paths:
+    - /var/log/auth.log
+    - /var/log/syslog
+    - /var/log/audit/audit.log
+    - /var/log/containers/*.log
+    - /var/log/pods/*/*/*.log
+    - /var/log/nginx/*.log
+    - /var/log/app/*.log
+  outputs:
+    siem:
+      enabled: true
+    loki:
+      enabled: false
+      push_url: ""
+      tenant_id: ""
+      labels:
+        source: forge-siem-agent
+        environment: production
+      only_paths:
+        - /var/log/containers/*.log
+        - /var/log/pods/*/*/*.log
+
+fim:
+  paths:
+    - /etc
+    - /usr/bin
+    - /home
+  schedule: realtime
+
+response:
+  enabled: true

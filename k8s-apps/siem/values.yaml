@@ -1,0 +1,112 @@
+namespace: siem
+
+global:
+  imagePullPolicy: IfNotPresent
+  secretsManagerPath: payinvert/siem/secrets
+  secretNames:
+    runtime: siem-runtime-secrets
+    tls: siem-agent-tls
+    opensearch: siem-opensearch-secrets
+  redis:
+    host: existing-elasticache.example.internal
+    port: 6379
+    db: 2
+    usernameSecretKey: redis_username
+    passwordSecretKey: redis_password
+  postgres:
+    dsnSecretKey: postgres_dsn
+  opensearch:
+    urlSecretKey: opensearch_url
+    usernameSecretKey: opensearch_username
+    passwordSecretKey: opensearch_password
+    adminPasswordSecretKey: opensearch_initial_admin_password
+  loki:
+    enabled: false
+    pushURLSecretKey: loki_push_url
+    tenantIDSecretKey: loki_tenant_id
+    usernameSecretKey: loki_username
+    passwordSecretKey: loki_password
+  rabbitmq:
+    urlSecretKey: rabbitmq_url
+  response:
+    hmacSecretKey: response_hmac_key
+  api:
+    authTokenSecretKey: api_auth_token
+
+images:
+  agent: ghcr.io/payinvert/forge-siem/agent:0.1.0
+  ingest: ghcr.io/payinvert/forge-siem/ingest:0.1.0
+  decoder: ghcr.io/payinvert/forge-siem/decoder:0.1.0
+  rawArchiver: ghcr.io/payinvert/forge-siem/raw-archiver:0.1.0
+  rulesEngine: ghcr.io/payinvert/forge-siem/rules-engine:0.1.0
+  vulnService: ghcr.io/payinvert/forge-siem/vuln-service:0.1.0
+  responseOrchestrator: ghcr.io/payinvert/forge-siem/response-orchestrator:0.1.0
+  api: ghcr.io/payinvert/forge-siem/api:0.1.0
+  dashboard: ghcr.io/payinvert/forge-siem/dashboard:0.1.0
+  opensearch: opensearchproject/opensearch:2.17.1
+  rabbitmq: rabbitmq:3.13-management
+
+ingest:
+  replicas: 2
+  service:
+    type: LoadBalancer
+    port: 1514
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+
+decoder:
+  replicas: 3
+
+rawArchiver:
+  replicas: 1
+
+rulesEngine:
+  replicas: 2
+
+vulnService:
+  replicas: 1
+
+responseOrchestrator:
+  replicas: 1
+
+api:
+  replicas: 2
+  service:
+    port: 8080
+    metricsPort: 9090
+
+dashboard:
+  replicas: 1
+  host: siem.yourdomain.com
+  allowedCIDRs:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+  service:
+    port: 80
+    targetPort: 8080
+
+opensearch:
+  replicas: 1
+  storageSize: 200Gi
+  securityEnabled: true
+
+rabbitmq:
+  replicas: 1
+  storageSize: 20Gi
+
+agent:
+  enabled: true
+  logOutputs:
+    siemEnabled: true
+    lokiEnabled: false
+    lokiOnlyPaths:
+      - /var/log/containers/*.log
+      - /var/log/pods/*/*/*.log
+    lokiStaticLabels:
+      source: forge-siem-agent
+      environment: production
+  daemonset:
+    tolerations:
+      - operator: Exists

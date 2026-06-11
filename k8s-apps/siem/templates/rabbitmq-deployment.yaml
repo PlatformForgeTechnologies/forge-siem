@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siem-rabbitmq
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.rabbitmq.replicas }}
+  selector:
+    matchLabels:
+      app: siem-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: siem-rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: {{ .Values.images.rabbitmq }}
+          ports:
+            - containerPort: 5672
+              name: amqp
+            - containerPort: 15672
+              name: management
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siem-rabbitmq
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: siem-rabbitmq
+  ports:
+    - port: 5672
+      targetPort: amqp
+      name: amqp
+    - port: 15672
+      targetPort: management
+      name: management

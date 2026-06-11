@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siem-ingest
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.ingest.replicas }}
+  selector:
+    matchLabels:
+      app: siem-ingest
+  template:
+    metadata:
+      labels:
+        app: siem-ingest
+    spec:
+      containers:
+        - name: ingest
+          image: {{ .Values.images.ingest }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: 1514
+              name: mtls
+            - containerPort: 9090
+              name: metrics
+          env:
+            - name: REDIS_ADDRESS
+              value: {{ printf "%s:%v" .Values.global.redis.host .Values.global.redis.port | quote }}
+            - name: REDIS_DB
+              value: {{ .Values.global.redis.db | quote }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.redis.usernameSecretKey }}
+                  optional: true
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.redis.passwordSecretKey }}
+                  optional: true
+            - name: TLS_CERT_FILE
+              value: /etc/siem/tls/tls.crt
+            - name: TLS_KEY_FILE
+              value: /etc/siem/tls/tls.key
+            - name: TLS_CA_FILE
+              value: /etc/siem/tls/ca.crt
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/siem/tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ .Values.global.secretNames.tls }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siem-ingest
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: siem-ingest
+    siem.metrics: "true"
+  annotations:
+{{ toYaml .Values.ingest.service.annotations | indent 4 }}
+spec:
+  type: {{ .Values.ingest.service.type }}
+  selector:
+    app: siem-ingest
+  ports:
+    - port: {{ .Values.ingest.service.port }}
+      targetPort: mtls
+      protocol: TCP
+      name: mtls
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics

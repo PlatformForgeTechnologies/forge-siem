@@ -1,0 +1,157 @@
+:root {
+  color-scheme: dark;
+  --bg: #08111a;
+  --panel: rgba(12, 27, 40, 0.88);
+  --panel-border: rgba(130, 175, 202, 0.22);
+  --text: #e7f0f6;
+  --muted: #8ea8ba;
+  --accent: #70f0b4;
+  --warn: #ff8a5b;
+  --critical: #ff4f4f;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(112, 240, 180, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(255, 138, 91, 0.16), transparent 24%),
+    linear-gradient(180deg, #071019 0%, #0b1621 100%);
+  color: var(--text);
+}
+
+.shell {
+  width: min(1160px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 64px;
+}
+
+.hero,
+.grid {
+  display: grid;
+  gap: 20px;
+}
+
+.hero {
+  grid-template-columns: 1.3fr 1fr;
+  align-items: end;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(42px, 7vw, 76px);
+  line-height: 0.95;
+}
+
+.lede {
+  max-width: 54ch;
+  color: var(--muted);
+}
+
+.stats,
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stats div,
+.panel {
+  padding: 22px;
+}
+
+.stats span,
+.rows span {
+  color: var(--muted);
+}
+
+.stats strong {
+  display: block;
+  font-size: 36px;
+  margin-top: 6px;
+}
+
+.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel header,
+.rows li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.rows {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+
+.rows li {
+  padding: 14px 0;
+  border-top: 1px solid rgba(142, 168, 186, 0.16);
+}
+
+.badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.badge-active {
+  background: rgba(112, 240, 180, 0.14);
+  color: var(--accent);
+}
+
+.badge-high {
+  background: rgba(255, 138, 91, 0.14);
+  color: var(--warn);
+}
+
+.badge-critical {
+  background: rgba(255, 79, 79, 0.14);
+  color: var(--critical);
+}
+
+button,
+a {
+  color: var(--text);
+}
+
+button {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 900px) {
+  .hero,
+  .grid,
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}
