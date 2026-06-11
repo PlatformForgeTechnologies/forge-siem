@@ -15,7 +15,7 @@
 
 - Aurora PostgreSQL: add database `siem`
 - ElastiCache Redis: use logical DB `2`
-- EKS cluster: `prod-payinvert-eks-eu`
+- EKS cluster: existing `PlatformForgeTechnologies` production cluster
 - Secrets: ExternalSecrets + AWS Secrets Manager
 - Ingress: Traefik + internal NLB
 - Monitoring: Prometheus/Grafana scrape service metrics

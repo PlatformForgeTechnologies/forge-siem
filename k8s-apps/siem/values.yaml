@@ -2,7 +2,7 @@ namespace: siem
 
 global:
   imagePullPolicy: IfNotPresent
-  secretsManagerPath: payinvert/siem/secrets
+  secretsManagerPath: platformforgetechnologies/siem/secrets
   secretNames:
     runtime: siem-runtime-secrets
     tls: siem-agent-tls
@@ -34,17 +34,17 @@ global:
     authTokenSecretKey: api_auth_token
 
 images:
-  agent: ghcr.io/payinvert/forge-siem/agent:0.1.0
-  ingest: ghcr.io/payinvert/forge-siem/ingest:0.1.0
-  decoder: ghcr.io/payinvert/forge-siem/decoder:0.1.0
-  rawArchiver: ghcr.io/payinvert/forge-siem/raw-archiver:0.1.0
-  alertIndexer: ghcr.io/payinvert/forge-siem/alert-indexer:0.1.0
-  alertDedup: ghcr.io/payinvert/forge-siem/alert-dedup:0.1.0
-  rulesEngine: ghcr.io/payinvert/forge-siem/rules-engine:0.1.0
-  vulnService: ghcr.io/payinvert/forge-siem/vuln-service:0.1.0
-  responseOrchestrator: ghcr.io/payinvert/forge-siem/response-orchestrator:0.1.0
-  api: ghcr.io/payinvert/forge-siem/api:0.1.0
-  dashboard: ghcr.io/payinvert/forge-siem/dashboard:0.1.0
+  agent: ghcr.io/platformforgetechnologies/forge-siem/agent:0.1.0
+  ingest: ghcr.io/platformforgetechnologies/forge-siem/ingest:0.1.0
+  decoder: ghcr.io/platformforgetechnologies/forge-siem/decoder:0.1.0
+  rawArchiver: ghcr.io/platformforgetechnologies/forge-siem/raw-archiver:0.1.0
+  alertIndexer: ghcr.io/platformforgetechnologies/forge-siem/alert-indexer:0.1.0
+  alertDedup: ghcr.io/platformforgetechnologies/forge-siem/alert-dedup:0.1.0
+  rulesEngine: ghcr.io/platformforgetechnologies/forge-siem/rules-engine:0.1.0
+  vulnService: ghcr.io/platformforgetechnologies/forge-siem/vuln-service:0.1.0
+  responseOrchestrator: ghcr.io/platformforgetechnologies/forge-siem/response-orchestrator:0.1.0
+  api: ghcr.io/platformforgetechnologies/forge-siem/api:0.1.0
+  dashboard: ghcr.io/platformforgetechnologies/forge-siem/dashboard:0.1.0
   opensearch: opensearchproject/opensearch:2.17.1
   rabbitmq: rabbitmq:3.13-management
 
@@ -86,7 +86,7 @@ api:
 
 dashboard:
   replicas: 1
-  host: siem.yourdomain.com
+  host: siem.platformforgetechnologies.com
   allowedCIDRs:
     - 10.0.0.0/8
     - 172.16.0.0/12
