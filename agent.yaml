@@ -1,3 +1,6 @@
+state:
+  path: /var/lib/forge-siem-agent/state/offsets.json
+
 server:
   host: siem-ingest.internal
   port: 1514
@@ -20,7 +23,9 @@ log_collection:
     loki:
       enabled: false
       push_url: ""
-      tenant_id: ""
+      tenant_id: ""   # optional: used for Grafana Enterprise Logs / multi-tenant Loki
+      username: ""    # optional: basic auth for hosted or enterprise Loki
+      password: ""    # optional: basic auth for hosted or enterprise Loki
       labels:
         source: forge-siem-agent
         environment: production

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siem-alert-dedup
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.alertDedup.replicas }}
+  selector:
+    matchLabels:
+      app: siem-alert-dedup
+  template:
+    metadata:
+      labels:
+        app: siem-alert-dedup
+    spec:
+      containers:
+        - name: alert-dedup
+          image: {{ .Values.images.alertDedup }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: REDIS_ADDRESS
+              value: {{ printf "%s:%v" .Values.global.redis.host .Values.global.redis.port | quote }}
+            - name: REDIS_DB
+              value: {{ .Values.global.redis.db | quote }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.redis.usernameSecretKey }}
+                  optional: true
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secretNames.runtime }}
+                  key: {{ .Values.global.redis.passwordSecretKey }}
+                  optional: true
+          ports:
+            - containerPort: 9090
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: siem-alert-dedup
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: siem-alert-dedup
+    siem.metrics: "true"
+spec:
+  selector:
+    app: siem-alert-dedup
+  ports:
+    - port: 9090
+      targetPort: metrics
+      name: metrics

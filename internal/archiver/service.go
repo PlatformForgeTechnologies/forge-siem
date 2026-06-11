@@ -34,7 +34,7 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 
 	indexer := platform.NewOpenSearch(s.cfg)
-	consumer := "raw-archiver-" + hostnameSuffix()
+	consumer := "raw-archiver-" + platform.ConsumerSuffix()
 	log.Printf("raw archiver started, stream=%s", s.cfg.StreamRaw)
 
 	return platform.ConsumeGroup(ctx, redisClient.Client(), s.cfg.StreamRaw, groupName, consumer, func(ctx context.Context, msg redis.XMessage) error {
@@ -62,8 +62,4 @@ func payloadFromMessage(msg redis.XMessage) (map[string]any, error) {
 		return nil, err
 	}
 	return payload, nil
-}
-
-func hostnameSuffix() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

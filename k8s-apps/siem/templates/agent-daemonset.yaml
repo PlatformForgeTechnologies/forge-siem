@@ -69,6 +69,8 @@ spec:
             - name: tls
               mountPath: /etc/siem/tls
               readOnly: true
+            - name: state
+              mountPath: /var/lib/forge-siem-agent/state
             - name: varlog
               mountPath: /var/log
               readOnly: true
@@ -85,6 +87,10 @@ spec:
         - name: tls
           secret:
             secretName: {{ .Values.global.secretNames.tls }}
+        - name: state
+          hostPath:
+            path: /var/lib/forge-siem-agent/state
+            type: DirectoryOrCreate
         - name: varlog
           hostPath:
             path: /var/log
@@ -123,6 +129,8 @@ data:
           enabled: {{ .Values.agent.logOutputs.lokiEnabled }}
           push_url: {{ if .Values.global.loki.enabled }}${LOKI_PUSH_URL}{{ else }}""{{ end }}
           tenant_id: {{ if .Values.global.loki.enabled }}${LOKI_TENANT_ID}{{ else }}""{{ end }}
+          username: {{ if .Values.global.loki.enabled }}${LOKI_USERNAME}{{ else }}""{{ end }}
+          password: {{ if .Values.global.loki.enabled }}${LOKI_PASSWORD}{{ else }}""{{ end }}
           labels:
 {{ toYaml .Values.agent.logOutputs.lokiStaticLabels | indent 12 }}
           only_paths:

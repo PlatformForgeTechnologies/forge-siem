@@ -27,6 +27,7 @@ type Service struct {
 	cfg       config.AppConfig
 	agentID   string
 	fileCfg   config.AgentFileConfig
+	loki      *lokiClient
 	offsets   map[string]int64
 	offsetsMu sync.Mutex
 }
@@ -42,12 +43,24 @@ func New(cfg config.AppConfig) *Service {
 	if err != nil {
 		log.Printf("agent config load failed, falling back to defaults: %v", err)
 	}
+	agentID := getenvOr("AGENT_ID", uuid.NewString())
+	loki, err := newLokiClient(fileCfg, agentID)
+	if err != nil {
+		log.Printf("loki client initialization failed: %v", err)
+	}
+
+	offsets, err := loadOffsets(fileCfg.State.Path)
+	if err != nil {
+		log.Printf("agent state load failed, starting with empty offsets: %v", err)
+		offsets = map[string]int64{}
+	}
 
 	return &Service{
 		cfg:     cfg,
-		agentID: getenvOr("AGENT_ID", uuid.NewString()),
+		agentID: agentID,
 		fileCfg: fileCfg,
-		offsets: map[string]int64{},
+		loki:    loki,
+		offsets: offsets,
 	}
 }
 
@@ -88,14 +101,8 @@ func (s *Service) Run(ctx context.Context) error {
 						continue
 					}
 					for _, entry := range entries {
-						conn, err = s.ensureConn(conn)
-						if err != nil {
-							log.Printf("connect failed before shipping %s: %v", path, err)
-							break
-						}
-						if err := s.sendLog(conn, path, entry.Line); err != nil {
-							log.Printf("ship log failed: %v", err)
-							conn = s.resetConn(conn)
+						if err := s.dispatchLog(ctx, &conn, path, entry.Line); err != nil {
+							log.Printf("dispatch log failed for %s: %v", path, err)
 							break
 						}
 						s.setFileOffset(path, entry.NextOffset)
@@ -104,6 +111,54 @@ func (s *Service) Run(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (s *Service) dispatchLog(ctx context.Context, conn *net.Conn, path, line string) error {
+	shouldSendSIEM := s.fileCfg.LogCollection.Outputs.SIEM.Enabled
+	shouldSendLoki := s.shouldSendToLoki(path)
+
+	if shouldSendSIEM {
+		var err error
+		*conn, err = s.ensureConn(*conn)
+		if err != nil {
+			return fmt.Errorf("connect failed before SIEM shipping: %w", err)
+		}
+		if err := s.sendLog(*conn, path, line); err != nil {
+			*conn = s.resetConn(*conn)
+			return fmt.Errorf("siem output failed: %w", err)
+		}
+	}
+
+	if shouldSendLoki {
+		if s.loki == nil {
+			return fmt.Errorf("loki output selected but client is not configured")
+		}
+		if err := s.loki.push(ctx, path, line, time.Now().UTC()); err != nil {
+			return fmt.Errorf("loki output failed: %w", err)
+		}
+	}
+
+	if !shouldSendSIEM && !shouldSendLoki {
+		return nil
+	}
+	return nil
+}
+
+func (s *Service) shouldSendToLoki(path string) bool {
+	lokiCfg := s.fileCfg.LogCollection.Outputs.Loki
+	if !lokiCfg.Enabled {
+		return false
+	}
+	if len(lokiCfg.OnlyPaths) == 0 {
+		return true
+	}
+	for _, pattern := range lokiCfg.OnlyPaths {
+		matched, err := filepath.Match(pattern, path)
+		if err == nil && matched {
+			return true
+		}
+	}
+	return false
 }
 
 func hostname() string {
@@ -266,4 +321,7 @@ func (s *Service) setFileOffset(path string, offset int64) {
 	s.offsetsMu.Lock()
 	defer s.offsetsMu.Unlock()
 	s.offsets[path] = offset
+	if err := saveOffsets(s.fileCfg.State.Path, s.offsets); err != nil {
+		log.Printf("persist offsets failed: %v", err)
+	}
 }

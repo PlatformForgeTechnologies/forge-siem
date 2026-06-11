@@ -38,6 +38,8 @@ images:
   ingest: ghcr.io/payinvert/forge-siem/ingest:0.1.0
   decoder: ghcr.io/payinvert/forge-siem/decoder:0.1.0
   rawArchiver: ghcr.io/payinvert/forge-siem/raw-archiver:0.1.0
+  alertIndexer: ghcr.io/payinvert/forge-siem/alert-indexer:0.1.0
+  alertDedup: ghcr.io/payinvert/forge-siem/alert-dedup:0.1.0
   rulesEngine: ghcr.io/payinvert/forge-siem/rules-engine:0.1.0
   vulnService: ghcr.io/payinvert/forge-siem/vuln-service:0.1.0
   responseOrchestrator: ghcr.io/payinvert/forge-siem/response-orchestrator:0.1.0
@@ -59,6 +61,12 @@ decoder:
   replicas: 3
 
 rawArchiver:
+  replicas: 1
+
+alertIndexer:
+  replicas: 1
+
+alertDedup:
   replicas: 1
 
 rulesEngine:

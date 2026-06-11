@@ -4,15 +4,21 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"forge-siem/internal/config"
+	"forge-siem/internal/platform"
 	"forge-siem/internal/types"
 )
+
+const groupName = "rules-engine"
 
 type Rule struct {
 	ID        string
@@ -59,30 +65,36 @@ func New(cfg config.AppConfig) *Engine {
 }
 
 func (e *Engine) Run(ctx context.Context) error {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+	redisClient := platform.NewRedis(e.cfg)
+	defer redisClient.Close()
 
-	log.Printf("rules engine started, input=%s output=%s", e.cfg.StreamDecoded, e.cfg.StreamAlerts)
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			event := types.Event{
-				ID:        uuid.NewString(),
-				Timestamp: time.Now().UTC(),
-				AgentID:   "demo-agent",
-				Source:    "syslog",
-				Category:  "authentication",
-				Severity:  "medium",
-				Raw:       "sshd Failed password for invalid user root from 10.0.0.25",
-				Fields:    map[string]any{"src_ip": "10.0.0.25"},
-			}
-			for _, alert := range e.Evaluate(event) {
-				log.Printf("alert emitted: %s severity=%s", alert.Title, alert.Severity)
-			}
-		}
+	if err := redisClient.EnsureConsumerGroup(ctx, e.cfg.StreamDecoded, groupName); err != nil {
+		return fmt.Errorf("ensure rules engine consumer group: %w", err)
 	}
+
+	consumer := "rules-engine-" + uuid.NewString()
+	log.Printf("rules engine started, input=%s output=%s", e.cfg.StreamDecoded, e.cfg.StreamAlerts)
+	return platform.ConsumeGroup(ctx, redisClient.Client(), e.cfg.StreamDecoded, groupName, consumer, func(ctx context.Context, msg redis.XMessage) error {
+		event, err := decodeEventMessage(msg)
+		if err != nil {
+			log.Printf("rules payload error: %v", err)
+			return nil
+		}
+		for _, alert := range e.Evaluate(event) {
+			values, err := platform.MarshalMap(alert)
+			if err != nil {
+				return err
+			}
+			if err := redisClient.Client().XAdd(ctx, &redis.XAddArgs{
+				Stream: e.cfg.StreamAlerts,
+				Values: values,
+			}).Err(); err != nil {
+				return fmt.Errorf("xadd alert: %w", err)
+			}
+			log.Printf("alert emitted: %s severity=%s", alert.Title, alert.Severity)
+		}
+		return nil
+	})
 }
 
 func (e *Engine) Evaluate(event types.Event) []types.Alert {
@@ -143,4 +155,16 @@ func toString(value any) string {
 	default:
 		return ""
 	}
+}
+
+func decodeEventMessage(msg redis.XMessage) (types.Event, error) {
+	raw, ok := msg.Values["payload"].(string)
+	if !ok {
+		return types.Event{}, fmt.Errorf("missing payload field")
+	}
+	var event types.Event
+	if err := json.Unmarshal([]byte(raw), &event); err != nil {
+		return types.Event{}, err
+	}
+	return event, nil
 }

@@ -8,6 +8,9 @@ import (
 )
 
 type AgentFileConfig struct {
+	State struct {
+		Path string `yaml:"path"`
+	} `yaml:"state"`
 	Server struct {
 		Host       string `yaml:"host"`
 		Port       int    `yaml:"port"`
@@ -25,6 +28,8 @@ type AgentFileConfig struct {
 				Enabled   bool              `yaml:"enabled"`
 				PushURL   string            `yaml:"push_url"`
 				TenantID  string            `yaml:"tenant_id"`
+				Username  string            `yaml:"username"`
+				Password  string            `yaml:"password"`
 				Labels    map[string]string `yaml:"labels"`
 				OnlyPaths []string          `yaml:"only_paths"`
 			} `yaml:"loki"`
