@@ -1,0 +1,38 @@
+apiVersion: v2
+name: forge-siem
+description: |
+  Umbrella chart for Forge SIEM. Installs the platform (API, ingest, decoder, rules
+  engine, collector, dashboard, and all supporting services) and optionally the agent
+  DaemonSet for host-level telemetry and active response.
+
+  Sub-charts are versioned and released independently but follow the same minor version.
+  This chart's version is the canonical "Forge SIEM release" version.
+
+  Install both:
+    helm install forge-siem oci://ghcr.io/platformforgetechnologies/forge-siem/charts/forge-siem
+
+  Platform only:
+    helm install forge-siem oci://... --set agent.enabled=false
+
+  Agent only (existing platform):
+    helm install forge-siem-agent oci://... --set platform.enabled=false
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+
+dependencies:
+  # Platform: all server-side services, dashboard, collector, cluster-logs DaemonSet.
+  # Published to GHCR OCI on every tagged release of forge-siem-platform.
+  - name: siem
+    alias: platform
+    version: ">=0.2.0"
+    repository: "oci://ghcr.io/platformforgetechnologies/forge-siem/charts"
+    condition: platform.enabled
+
+  # Agent: DaemonSet for host-level telemetry, FIM, process monitoring, active response.
+  # Uncomment when forge-siem-agent chart is published to GHCR OCI.
+  # - name: forge-siem-agent
+  #   alias: agent
+  #   version: ">=0.2.0"
+  #   repository: "oci://ghcr.io/platformforgetechnologies/forge-siem/charts"
+  #   condition: agent.enabled

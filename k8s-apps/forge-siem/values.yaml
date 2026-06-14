@@ -1,0 +1,50 @@
+# ── Umbrella toggles ──────────────────────────────────────────────────────────
+platform:
+  enabled: true
+
+agent:
+  # Will be fully wired once the agent chart is published to GHCR OCI.
+  # Set to false to install the platform without the host agent.
+  enabled: true
+
+# ── Platform values (passed to the siem sub-chart via alias `platform`) ───────
+# All keys here override forge-siem-platform/k8s-apps/siem/values.yaml.
+# Only include values you want to change from the platform chart defaults.
+
+platform:
+  # Zero-config cluster log collection — enabled by default.
+  # DaemonSet on every node tails /var/log/pods without any app changes.
+  clusterLogs:
+    enabled: true
+
+  # For same-cluster agents, the ClusterIP service is sufficient (default).
+  # Enable externalService only when agents run outside this cluster.
+  ingest:
+    externalService:
+      enabled: false
+      # Set api.enrollment.ingestHost to the external LB hostname if enabling:
+      # type: LoadBalancer
+      # annotations:
+      #   service.beta.kubernetes.io/aws-load-balancer-type: nlb      # AWS
+      #   cloud.google.com/load-balancer-type: Internal                # GCP
+      #   service.beta.kubernetes.io/azure-load-balancer-internal: "true"  # Azure
+
+  api:
+    enrollment:
+      enabled: true
+      # Default: in-cluster DNS — enrolled agents connect automatically without
+      # any external URL when the agent DaemonSet is on the same cluster.
+      ingestHost: siem-ingest.siem.svc.cluster.local
+      ingestPort: 1514
+
+# ── Agent values (passed to the forge-siem-agent sub-chart via alias `agent`) ─
+# Uncomment and populate when the agent chart is wired in.
+#
+# agent:
+#   enrollment:
+#     platformURL: http://siem-api.siem.svc.cluster.local:8080
+#     token: ""   # create via: POST /api/v1/enrollment/tokens
+#   daemonset:
+#     tolerations:
+#       - operator: Exists
+#         effect: NoSchedule
