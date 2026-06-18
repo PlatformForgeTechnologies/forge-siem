@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forge SIEM — Open-source Kubernetes SIEM + EDR</title>
+  <meta name="description" content="Production-grade SIEM and EDR platform for Kubernetes. Agent mTLS transport, real-time detection, ClickHouse-backed event search, Helm chart deploy." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <rect width="22" height="22" rx="4" fill="#e63946" fill-opacity="0.12"/>
+        <path d="M6 16 L11 6 L16 16" stroke="#e63946" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
+        <path d="M8 13 H14" stroke="#e63946" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Forge SIEM</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#pricing">Pricing</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/PlatformForgeTechnologies" class="btn-ghost" target="_blank" rel="noopener">
+        GitHub
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 9.5 L9.5 2.5 M4 2.5 H9.5 V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">Open Source · Kubernetes-native · ClickHouse-backed</div>
+    <h1>
+      Security operations for<br />
+      <span class="accent">Kubernetes-native</span> teams.
+    </h1>
+    <p class="hero-sub">
+      Forge SIEM is a production-grade SIEM + EDR platform that ships as a Helm chart.
+      Agent mTLS transport, real-time Sigma detection, ClickHouse event search, and an analyst dashboard —
+      all self-hosted in your own cluster.
+    </p>
+    <div class="hero-actions">
+      <a href="docs.html#quickstart" class="btn-primary">Get started</a>
+      <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform" class="btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+    <div class="hero-meta font-mono">
+      <span class="tag ok">v0.3.0</span>
+      <span class="sep">·</span>
+      <span>Go 1.23 · React 18 · ClickHouse</span>
+      <span class="sep">·</span>
+      <span>MIT licence</span>
+    </div>
+
+    <!-- Terminal teaser -->
+    <div class="terminal" aria-label="Example Helm install command">
+      <div class="terminal-bar">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+        <span class="terminal-title">shell</span>
+      </div>
+      <pre class="terminal-body"><code><span class="t-comment"># One-command install on any Kubernetes cluster</span>
+helm repo add forge-siem https://platformforgetechnologies.github.io/forge-siem-platform
+helm install siem forge-siem/siem \
+  --namespace siem --create-namespace \
+  -f values-pi.yaml</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats bar ───────────────────────────────────────────────────────────── -->
+<section class="stats-bar">
+  <div class="container stats-grid">
+    <div class="stat-item">
+      <div class="stat-value">14</div>
+      <div class="stat-label">Microservices</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">31+</div>
+      <div class="stat-label">Detection rules</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">ClickHouse</div>
+      <div class="stat-label">Event backend</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">mTLS</div>
+      <div class="stat-label">Agent transport</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">Helm</div>
+      <div class="stat-label">One-command deploy</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ────────────────────────────────────────────────────────────── -->
+<section id="features" class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Features</div>
+      <h2>Everything a security team needs</h2>
+      <p>Built for operators who want Wazuh-level functionality with Kubernetes-native ergonomics.</p>
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon red">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 2L3 5.5V12.5L9 16L15 12.5V5.5L9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 2V16M3 5.5L15 12.5M15 5.5L3 12.5" stroke="currentColor" stroke-width="1" stroke-opacity="0.4"/></svg>
+        </div>
+        <h3>Agent mTLS transport</h3>
+        <p>Lightweight Go agent runs on Linux, macOS, and Windows. Enrolls via PKI, communicates over TLS 1.3 with mutual auth. Log tailing, FIM, process monitoring, package inventory, and active response.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon amber">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M9 6V9L11 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Real-time detection</h3>
+        <p>31+ Sigma-format detection rules across Linux auth, process, FIM, network, Kubernetes, and Windows auth. Rules engine evaluates decoded events in-stream and fires alerts to Redis within milliseconds.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon blue">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="2" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="10" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="10" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+        </div>
+        <h3>ClickHouse event backend</h3>
+        <p>MergeTree tables for events, alerts, and raw events with TTL-based lifecycle. Sub-second search across millions of events using field:value syntax with timeline bucketing.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon green">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 14 L4 7 M8 14 L8 4 M12 14 L12 9 M16 14 L16 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Analyst dashboard</h3>
+        <p>React dashboard with 14 pages: Overview, Alerts, Agents, Rules, Vulnerabilities, Logs, Network, Cases, Hunts, Dashboards, Reports, and Settings. Live SSE alert stream, MITRE ATT&amp;CK overlays, alert drawer with remediation guidance.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon purple">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 9 C2 5.13 5.13 2 9 2 C12.87 2 16 5.13 16 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9 9 L9 16 M6 13 L9 16 L12 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Active response</h3>
+        <p>HMAC-signed response commands queued to Redis, polled by the agent. Full RabbitMQ fanout for notifications and webhooks. Slack alerts for high/critical events. Response log with job tracking.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon red">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3 L9 9 M12.5 5.5 L9 9 L5.5 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13 C3 11.3 5.7 10 9 10 C12.3 10 15 11.3 15 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Vulnerability scanning</h3>
+        <p>NVD CVE catalog with 2000+ CVEs polled every 6h. Per-agent package inventory matching. Trivy Operator integration for container image scanning — VulnerabilityReport CRDs persisted to PostgreSQL.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon amber">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M2 4 H16 M2 9 H16 M2 14 H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Compliance tagging</h3>
+        <p>Every alert is automatically mapped from MITRE ATT&amp;CK to CIS Controls v8 and NIST 800-53 Rev 5. Compliance breakdown visible in alert details and exportable per-tenant.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon blue">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="9" cy="9" r="2" fill="currentColor"/><path d="M9 3V1 M9 17V15 M3 9H1 M17 9H15 M4.9 4.9L3.5 3.5 M14.5 14.5L13.1 13.1 M4.9 13.1L3.5 14.5 M13.1 4.9L14.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Helm + ArgoCD</h3>
+        <p>Full Helm chart with self-hosted and BYO dependency modes. ArgoCD app-of-apps with PreSync bootstrap jobs. Pi/dev overlay with fully self-contained in-cluster dependencies. KEDA autoscaling on stream lag.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon green">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M6 9 L8 11 L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/></svg>
+        </div>
+        <h3>RBAC + audit log</h3>
+        <p>Email/password login with HttpOnly session cookies. PBKDF2-SHA256 password hashing. Four roles: analyst, responder, admin, viewer. Every admin action written to the audit log.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture ─────────────────────────────────────────────────────────── -->
+<section id="architecture" class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Architecture</div>
+      <h2>Pipeline built for throughput</h2>
+      <p>14 services connected by Redis Streams. Each stage is independently scalable via KEDA.</p>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-col">
+        <div class="arch-label">Agents</div>
+        <div class="arch-box accent-box">
+          <div class="arch-service">forge-siem-agent</div>
+          <div class="arch-service-sub">mTLS / TLS 1.3</div>
+        </div>
+        <div class="arch-box accent-box">
+          <div class="arch-service">collector</div>
+          <div class="arch-service-sub">HTTP POST / UDP syslog</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">→</div>
+
+      <div class="arch-col">
+        <div class="arch-label">Ingest</div>
+        <div class="arch-box">
+          <div class="arch-service">ingest</div>
+          <div class="arch-service-sub">siem:raw-events</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">→</div>
+
+      <div class="arch-col">
+        <div class="arch-label">Processing</div>
+        <div class="arch-box">
+          <div class="arch-service">decoder</div>
+          <div class="arch-service-sub">siem:decoded-events</div>
+        </div>
+        <div class="arch-box">
+          <div class="arch-service">raw-archiver</div>
+          <div class="arch-service-sub">ClickHouse raw_events</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">→</div>
+
+      <div class="arch-col">
+        <div class="arch-label">Detection</div>
+        <div class="arch-box warn-box">
+          <div class="arch-service">rules-engine</div>
+          <div class="arch-service-sub">siem:alerts</div>
+        </div>
+        <div class="arch-box">
+          <div class="arch-service">alert-dedup</div>
+          <div class="arch-service-sub">siem:deduped-alerts</div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">→</div>
+
+      <div class="arch-col">
+        <div class="arch-label">Response</div>
+        <div class="arch-box">
+          <div class="arch-service">alert-indexer</div>
+        </div>
+        <div class="arch-box">
+          <div class="arch-service">compliance-tagger</div>
+        </div>
+        <div class="arch-box">
+          <div class="arch-service">response-orchestrator</div>
+        </div>
+        <div class="arch-box">
+          <div class="arch-service">notification-dispatcher</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-storage">
+      <div class="storage-item">
+        <div class="storage-name">ClickHouse</div>
+        <div class="storage-desc">events · alerts · raw_events<br/>TTL-based lifecycle</div>
+      </div>
+      <div class="storage-item">
+        <div class="storage-name">PostgreSQL</div>
+        <div class="storage-desc">agents · rules · CVEs · cases<br/>compliance · response log</div>
+      </div>
+      <div class="storage-item">
+        <div class="storage-name">Redis</div>
+        <div class="storage-desc">streams · dedup keys<br/>agent command queues</div>
+      </div>
+      <div class="storage-item">
+        <div class="storage-name">RabbitMQ</div>
+        <div class="storage-desc">active response · webhooks<br/>notification fanout</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Dashboard screenshots ────────────────────────────────────────────────── -->
+<section id="screenshots" class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Dashboard</div>
+      <h2>Built for analysts, not just admins</h2>
+      <p>14 pages covering every stage of detection, investigation, and response.</p>
+    </div>
+
+    <div class="screenshots-tabs">
+      <button class="tab-btn active" data-target="tab-overview">Overview</button>
+      <button class="tab-btn" data-target="tab-alerts">Alerts</button>
+      <button class="tab-btn" data-target="tab-logs">Log search</button>
+      <button class="tab-btn" data-target="tab-admin">Admin center</button>
+    </div>
+
+    <div class="screenshot-panels">
+      <div id="tab-overview" class="screenshot-panel active">
+        <div class="mock-dashboard">
+          <div class="mock-topbar">
+            <span class="mock-logo">⬡ FORGE SIEM</span>
+            <span class="mock-path">/ overview</span>
+          </div>
+          <div class="mock-stats">
+            <div class="mock-stat"><div class="mock-stat-val">2.4M</div><div class="mock-stat-lbl">Events / 24h</div></div>
+            <div class="mock-stat warn"><div class="mock-stat-val">14</div><div class="mock-stat-lbl">Open alerts</div></div>
+            <div class="mock-stat ok"><div class="mock-stat-val">8 / 12</div><div class="mock-stat-lbl">Agents online</div></div>
+            <div class="mock-stat crit"><div class="mock-stat-val">3</div><div class="mock-stat-lbl">Critical CVEs</div></div>
+          </div>
+          <div class="mock-panels">
+            <div class="mock-panel">
+              <div class="mock-panel-title">Redis backlog</div>
+              <div class="mock-sparkline"></div>
+              <div class="mock-panel-meta">raw 0 · decoded 0 · alerts 2 · dedup 0</div>
+            </div>
+            <div class="mock-panel">
+              <div class="mock-panel-title">Alert mix</div>
+              <div class="mock-sparkline warn-spark"></div>
+              <div class="mock-panel-meta">crit 2 · high 5 · open 14</div>
+            </div>
+            <div class="mock-panel">
+              <div class="mock-panel-title">Fleet posture</div>
+              <div class="mock-sparkline ok-spark"></div>
+              <div class="mock-panel-meta">enrolled 12 · active 8 · stale 4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-alerts" class="screenshot-panel">
+        <div class="mock-dashboard">
+          <div class="mock-topbar">
+            <span class="mock-logo">⬡ FORGE SIEM</span>
+            <span class="mock-path">/ alerts</span>
+          </div>
+          <div class="mock-table">
+            <div class="mock-table-header">
+              <span>TIME</span><span>SEV</span><span>RULE</span><span>HOST</span><span>STATUS</span>
+            </div>
+            <div class="mock-row"><span class="t-muted">2m ago</span><span class="sev-crit">CRIT</span><span>SSH Brute Force Detected</span><span class="t-info">192.168.1.42</span><span class="status-open">OPEN</span></div>
+            <div class="mock-row"><span class="t-muted">5m ago</span><span class="sev-high">HIGH</span><span>Privilege Escalation via sudo</span><span class="t-info">k8s-node-02</span><span class="status-ack">ACK</span></div>
+            <div class="mock-row"><span class="t-muted">12m ago</span><span class="sev-high">HIGH</span><span>Suspicious Network Connection</span><span class="t-info">k8s-node-01</span><span class="status-open">OPEN</span></div>
+            <div class="mock-row"><span class="t-muted">28m ago</span><span class="sev-med">MED</span><span>File Modification in /etc</span><span class="t-info">192.168.1.15</span><span class="status-open">OPEN</span></div>
+            <div class="mock-row"><span class="t-muted">1h ago</span><span class="sev-low">LOW</span><span>New Cron Job Created</span><span class="t-info">k8s-node-03</span><span class="status-fp">FP</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-logs" class="screenshot-panel">
+        <div class="mock-dashboard">
+          <div class="mock-topbar">
+            <span class="mock-logo">⬡ FORGE SIEM</span>
+            <span class="mock-path">/ logs</span>
+          </div>
+          <div class="mock-search">
+            <div class="mock-search-bar">
+              <span class="t-muted">search: </span><span class="t-info">level:error namespace:siem service:api</span><span class="mock-cursor">▌</span>
+            </div>
+          </div>
+          <div class="mock-log-rows">
+            <div class="mock-log-row"><span class="t-muted t-xs">06:42:17</span><span class="t-crit t-xs">[ERROR]</span><span class="t-xs t-muted">api</span><span class="t-xs">failed to decode event: unexpected EOF in stream</span></div>
+            <div class="mock-log-row"><span class="t-muted t-xs">06:42:09</span><span class="t-crit t-xs">[ERROR]</span><span class="t-xs t-muted">api</span><span class="t-xs">postgres query timeout after 5000ms</span></div>
+            <div class="mock-log-row"><span class="t-muted t-xs">06:41:55</span><span class="t-warn t-xs">[WARN]</span><span class="t-xs t-muted">decoder</span><span class="t-xs">unknown event type: endpoint.process.v3</span></div>
+            <div class="mock-log-row"><span class="t-muted t-xs">06:41:44</span><span class="t-ok t-xs">[INFO]</span><span class="t-xs t-muted">rules-engine</span><span class="t-xs">loaded 31 rules from pack.yaml</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-admin" class="screenshot-panel">
+        <div class="mock-dashboard admin-mock">
+          <div class="mock-topbar admin-topbar">
+            <span class="mock-logo admin-logo">⬡ FORGE SIEM <span class="admin-label">admin center</span></span>
+            <span class="mock-path">/ overview</span>
+          </div>
+          <div class="mock-stats">
+            <div class="mock-stat ok"><div class="mock-stat-val">active</div><div class="mock-stat-lbl">Status</div></div>
+            <div class="mock-stat"><div class="mock-stat-val">free</div><div class="mock-stat-lbl">Plan</div></div>
+            <div class="mock-stat"><div class="mock-stat-val">12</div><div class="mock-stat-lbl">Enrolled agents</div></div>
+            <div class="mock-stat"><div class="mock-stat-val">4</div><div class="mock-stat-lbl">Users</div></div>
+          </div>
+          <div class="mock-user-table">
+            <div class="mock-table-header"><span>USER</span><span>ROLE</span><span>LAST LOGIN</span><span>STATUS</span></div>
+            <div class="mock-row"><span>admin@forge-siem.local</span><span class="role-admin">ADMIN</span><span class="t-muted">2m ago</span><span class="status-active">ACTIVE</span></div>
+            <div class="mock-row"><span>analyst@acme.com</span><span class="role-analyst">ANALYST</span><span class="t-muted">1h ago</span><span class="status-active">ACTIVE</span></div>
+            <div class="mock-row"><span>responder@acme.com</span><span class="role-resp">RESPONDER</span><span class="t-muted">3d ago</span><span class="status-active">ACTIVE</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Installation ──────────────────────────────────────────────────────────── -->
+<section id="install" class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Installation</div>
+      <h2>Up in minutes on any cluster</h2>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h3>Add the Helm repo</h3>
+          <div class="code-block">
+            <div class="code-bar"><span>shell</span></div>
+            <pre><code>helm repo add forge-siem \
+  https://platformforgetechnologies.github.io/forge-siem-platform
+helm repo update</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h3>Install on a Pi / single-node cluster</h3>
+          <p>Use the bundled <code>values-pi.yaml</code> overlay for a fully self-contained install. All dependencies (ClickHouse, PostgreSQL, Redis, RabbitMQ) run in-cluster.</p>
+          <div class="code-block">
+            <div class="code-bar"><span>shell</span></div>
+            <pre><code>helm install siem forge-siem/siem \
+  --namespace siem --create-namespace \
+  -f https://raw.githubusercontent.com/PlatformForgeTechnologies/\
+forge-siem-platform/main/k8s-apps/siem/values-pi.yaml</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h3>Install an agent</h3>
+          <p>Download the <code>forge-siem-agent</code> binary and enroll it against your cluster's ingest endpoint. The agent handles mTLS automatically.</p>
+          <div class="code-block">
+            <div class="code-bar"><span>shell — Linux / macOS</span></div>
+            <pre><code>curl -fsSL https://github.com/PlatformForgeTechnologies/\
+forge-siem-agent/releases/latest/download/install.sh \
+  | INGEST_HOST=siem-ingest.siem.svc.cluster.local \
+    ENROLL_TOKEN=&lt;your-token&gt; sh</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <h3>Open the dashboard</h3>
+          <p>Access the dashboard at the hostname configured in your Ingress (default: <code>siem.platformforgetechnologies.com</code>). Log in with the bootstrap credentials from your values file.</p>
+          <div class="code-block">
+            <div class="code-bar"><span>shell — port-forward for local access</span></div>
+            <pre><code>kubectl port-forward -n siem svc/siem-dashboard 8080:80</code></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="install-tip">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M7 5V7.5M7 9.5V9.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Full documentation including BYO-dependency configuration, ArgoCD setup, and TLS configuration is in <a href="docs.html">the docs</a>.
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ──────────────────────────────────────────────────────────────── -->
+<section id="pricing" class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">Pricing</div>
+      <h2>Simple, honest pricing</h2>
+      <p>Self-host for free. Managed hosting and enterprise support coming soon.</p>
+    </div>
+
+    <div class="pricing-grid">
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-price">$0 <span>/ always</span></div>
+        <div class="pricing-desc">Full platform, self-hosted. MIT licence. No agent phone-home.</div>
+        <ul class="pricing-features">
+          <li>Unlimited agents</li>
+          <li>All 14 services</li>
+          <li>All detection rules</li>
+          <li>Helm chart + ArgoCD support</li>
+          <li>Community support (GitHub Issues)</li>
+        </ul>
+        <a href="docs.html#quickstart" class="btn-secondary btn-full">Get started</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Coming soon</div>
+        <div class="pricing-tier">Managed</div>
+        <div class="pricing-price">TBD <span>/ agent / month</span></div>
+        <div class="pricing-desc">Forge runs ClickHouse, stores events, and handles upgrades. Zero infrastructure for you.</div>
+        <ul class="pricing-features">
+          <li>Everything in Free</li>
+          <li>Forge-hosted ClickHouse</li>
+          <li>Auto-upgrades + managed certs</li>
+          <li>SLA-backed uptime</li>
+          <li>Email + Slack support</li>
+        </ul>
+        <a href="mailto:hello@platformforgetechnologies.com" class="btn-primary btn-full">Join waitlist</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Enterprise</div>
+        <div class="pricing-price">Custom</div>
+        <div class="pricing-desc">BYOC on AWS, GCP, or Azure. Data never leaves your cloud account.</div>
+        <ul class="pricing-features">
+          <li>Everything in Managed</li>
+          <li>Bring Your Own Cloud (BYOC)</li>
+          <li>SOC 2 Type 1 report</li>
+          <li>Dedicated support channel</li>
+          <li>Custom SLA + MSA</li>
+        </ul>
+        <a href="mailto:hello@platformforgetechnologies.com" class="btn-secondary btn-full">Contact us</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container cta-inner">
+    <h2>Ready to deploy?</h2>
+    <p>One Helm command. Runs on a Raspberry Pi 5 or a multi-cloud cluster.</p>
+    <div class="cta-actions">
+      <a href="docs.html#quickstart" class="btn-primary">Read the quickstart</a>
+      <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform" class="btn-ghost-white" target="_blank" rel="noopener">Star on GitHub ★</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <rect width="22" height="22" rx="4" fill="#e63946" fill-opacity="0.15"/>
+        <path d="M6 16 L11 6 L16 16" stroke="#e63946" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
+        <path d="M8 13 H14" stroke="#e63946" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Forge SIEM</span>
+      <span class="footer-copy">© 2026 Platform Forge Technologies</span>
+    </div>
+    <div class="footer-links">
+      <a href="docs.html">Documentation</a>
+      <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="mailto:hello@platformforgetechnologies.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
