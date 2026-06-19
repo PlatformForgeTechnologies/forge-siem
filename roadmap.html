@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forge SIEM — Roadmap</title>
+  <meta name="description" content="See what we've shipped and what's coming next. Forge SIEM public product roadmap." />
+  <meta property="og:title" content="Forge SIEM — Roadmap" />
+  <meta property="og:description" content="Public product roadmap for Forge SIEM. See what's shipped, in progress, and planned." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Nav ───────────────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <rect width="22" height="22" rx="4" fill="#e63946" fill-opacity="0.15"/>
+        <path d="M6 16 L11 6 L16 16" stroke="#e63946" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
+        <path d="M8 13 H14" stroke="#e63946" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Forge SIEM</span>
+    </a>
+    <div class="nav-links">
+      <a href="docs.html">Docs</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/PlatformForgeTechnologies" class="btn-ghost" target="_blank" rel="noopener">
+        GitHub
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M2.5 9.5 L9.5 2.5 M4 2.5 H9.5 V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="rm-hero">
+  <div class="container">
+    <div class="rm-hero-content">
+      <div class="section-tag">Roadmap</div>
+      <h1>What we're building</h1>
+      <p class="rm-hero-sub">A transparent look at what we've shipped and where Forge SIEM is headed. Updated as priorities evolve.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Roadmap Timeline ─────────────────────────────────────────────────── -->
+<section class="rm-timeline">
+  <div class="container">
+
+    <!-- ── Phase: Q1 2026 — Foundation ──────────────────────────────────── -->
+    <div class="rm-phase">
+      <div class="rm-phase-header">
+        <div class="rm-phase-marker rm-phase-marker--done">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 7 L5.5 9.5 L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="rm-phase-date">Q1 2026</div>
+          <h2 class="rm-phase-title">Foundation</h2>
+        </div>
+        <span class="rm-status rm-status--done">Completed</span>
+      </div>
+      <div class="rm-items">
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Full event pipeline</h3>
+            <p>Agent mTLS transport, ingest, decoder, Sigma rules engine, alert dedup, compliance tagging, and raw archiving — all streaming through Redis.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>ClickHouse storage backend</h3>
+            <p>MergeTree tables for events, alerts, and raw logs with TTL-based lifecycle. LowCardinality compression on high-frequency fields.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Sigma detection rules</h3>
+            <p>31 rules across Linux auth, process, FIM, network, Kubernetes, and Windows auth — mapped to MITRE ATT&CK with sub-second alert latency.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Agent with mTLS enrollment</h3>
+            <p>Standalone Go binary for Linux and Windows. Log tailing, FIM, process monitoring, package inventory. Enrollment PKI with CN-bound client certificates.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>REST API and analyst dashboard</h3>
+            <p>Session-authenticated API with RBAC. Dashboard with alert triage, agent management, log search, network flows, vulnerability tracking, and case management.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Helm chart deployment</h3>
+            <p>One-command deploy via ArgoCD. Self-hosted and BYO dependency modes. KEDA autoscaling on stream lag. GitHub Actions CI with per-component builds.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phase: Q2 2026 — Platform Hardening ─────────────────────────── -->
+    <div class="rm-phase">
+      <div class="rm-phase-header">
+        <div class="rm-phase-marker rm-phase-marker--done">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 7 L5.5 9.5 L11 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="rm-phase-date">Q2 2026</div>
+          <h2 class="rm-phase-title">Platform Hardening</h2>
+        </div>
+        <span class="rm-status rm-status--done">Completed</span>
+      </div>
+      <div class="rm-items">
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Vulnerability & image scanning</h3>
+            <p>NVD CVE catalog with 2,000+ CVEs, polled every 6 hours. Per-agent CVE matching and Trivy Operator integration for Kubernetes image scanning.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Active response framework</h3>
+            <p>HMAC-signed commands delivered via Redis, RabbitMQ-based response orchestration, and Slack webhook notifications for high-severity alerts.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Admin center</h3>
+            <p>Separate React app for platform administration — user management, billing operations, audit log, and platform settings. Role-gated to admins only.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Billing backend</h3>
+            <p>Database schema, store layer, and API routes for subscription management. Plan widget in the customer dashboard.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Agentless collection</h3>
+            <p>HTTP POST and UDP syslog collector for devices and services that can't run an agent — firewalls, network appliances, cloud-native services.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phase: Q3 2026 — Multi-Tenancy & SaaS ──────────────────────── -->
+    <div class="rm-phase">
+      <div class="rm-phase-header">
+        <div class="rm-phase-marker rm-phase-marker--current">
+          <span class="rm-pulse"></span>
+        </div>
+        <div>
+          <div class="rm-phase-date">Q3 2026</div>
+          <h2 class="rm-phase-title">Multi-Tenancy & SaaS</h2>
+        </div>
+        <span class="rm-status rm-status--current">In Progress</span>
+      </div>
+      <div class="rm-items">
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--current"></div>
+          <div class="rm-item-body">
+            <h3>Multi-tenant architecture</h3>
+            <p>Tenant-scoped data model across all resources. JWT-based API middleware. Per-tenant roles — owner, admin, analyst, viewer.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--current"></div>
+          <div class="rm-item-body">
+            <h3>Enrichment worker</h3>
+            <p>Automated alert enrichment with AbuseIPDB, GreyNoise, VirusTotal, and geolocation. Observable extraction for IPs, hashes, and domains.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Stripe billing & usage metering</h3>
+            <p>Subscription management, daily usage metering from ClickHouse, plan enforcement, and embedded Stripe customer portal.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Onboarding wizard</h3>
+            <p>Signup to first event in under 5 minutes. Account creation, email verification, cloud provider connection, agent install — all guided.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Customer & admin portals</h3>
+            <p>Customer portal for org settings, team management, API keys, and billing. Forge admin portal for tenant operations and system health.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phase: Q4 2026 — Cloud & Data Plane ─────────────────────────── -->
+    <div class="rm-phase">
+      <div class="rm-phase-header">
+        <div class="rm-phase-marker rm-phase-marker--planned"></div>
+        <div>
+          <div class="rm-phase-date">Q4 2026</div>
+          <h2 class="rm-phase-title">Cloud & Data Plane</h2>
+        </div>
+        <span class="rm-status rm-status--planned">Planned</span>
+      </div>
+      <div class="rm-items">
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Sync agent</h3>
+            <p>Outbound-only service in customer's data plane. Rule sync, alert metadata push, and WebSocket query proxy — no inbound ports needed.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>AWS BYOC integration</h3>
+            <p>One-click CloudFormation for IAM cross-account role. Helm chart deploys into customer EKS. S3 for raw log archival.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>GCP & Azure BYOC</h3>
+            <p>Service account + Workload Identity for GCP. App registration + RBAC for Azure. Cloud-native object storage for each provider.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Forge-hosted launch</h3>
+            <p>platformforge.com goes live — fully managed SIEM with zero-ops deployment. Per-agent and storage-based pricing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Phase: 2027 — Compliance & Automation ───────────────────────── -->
+    <div class="rm-phase">
+      <div class="rm-phase-header">
+        <div class="rm-phase-marker rm-phase-marker--planned"></div>
+        <div>
+          <div class="rm-phase-date">2027</div>
+          <h2 class="rm-phase-title">Compliance & Automation</h2>
+        </div>
+        <span class="rm-status rm-status--planned">Planned</span>
+      </div>
+      <div class="rm-items">
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>SOC 2 Type 1</h3>
+            <p>Access control, incident response policy, vendor review, audit log, MFA, encryption at rest — with compliance consultant.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Detection-as-code CI</h3>
+            <p>Customers push Sigma rules to their own git repo. Forge CI validates syntax, tests against sample events, and deploys via sync agent.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>SOAR playbooks</h3>
+            <p>Response playbooks triggered from deduped alerts. Visual playbook authoring UI on top of the existing RabbitMQ orchestration layer.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-body">
+            <h3>Linode BYOC & ISO 27001</h3>
+            <p>Linode cloud integration for BYOC deployments. ISO 27001 certification following SOC 2 with expanded information security management scope.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-inner cs-cta">
+      <h2>Want to shape what we build next?</h2>
+      <p>Join the waitlist and tell us about your infrastructure. Early users get direct input on the roadmap.</p>
+      <form id="rm-cta-form" class="cs-form cs-form--center" action="https://formspree.io/f/xwvjdoez" method="POST" novalidate>
+        <div class="cs-input-row">
+          <input
+            name="email"
+            type="email"
+            class="cs-email-input"
+            placeholder="your@email.com"
+            autocomplete="email"
+            required
+            aria-label="Work email"
+          />
+          <button type="submit" id="rm-cta-btn" class="btn-primary">Join waitlist</button>
+        </div>
+      </form>
+      <div id="rm-cta-success" class="cs-success" role="alert" style="display:none; max-width:480px; margin:12px auto 0;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <circle cx="9" cy="9" r="8" stroke="#22c55e" stroke-width="1.5"/>
+          <path d="M5.5 9 L7.5 11 L12.5 6.5" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        You're on the list — we'll be in touch.
+      </div>
+      <div id="rm-cta-error" class="cs-error" role="alert" style="display:none; max-width:480px; margin:8px auto 0;">
+        Something went wrong. Please try again.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <a href="/" class="nav-logo">
+      <svg width="18" height="18" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <rect width="22" height="22" rx="4" fill="#e63946" fill-opacity="0.15"/>
+        <path d="M6 16 L11 6 L16 16" stroke="#e63946" stroke-width="1.8" stroke-linejoin="round" fill="none"/>
+        <path d="M8 13 H14" stroke="#e63946" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Forge SIEM</span>
+    </a>
+    <div class="footer-links">
+      <a href="docs.html">Docs</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/PlatformForgeTechnologies" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 Platform Forge Technologies. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var ENDPOINT = 'https://formspree.io/f/xwvjdoez';
+  var ctaForm    = document.getElementById('rm-cta-form');
+  var ctaSuccess = document.getElementById('rm-cta-success');
+  var ctaError   = document.getElementById('rm-cta-error');
+  var ctaBtn     = document.getElementById('rm-cta-btn');
+
+  if (ctaForm) {
+    ctaForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (ctaBtn) ctaBtn.disabled = true;
+      if (ctaError) ctaError.style.display = 'none';
+
+      try {
+        var res = await fetch(ENDPOINT, {
+          method: 'POST',
+          body: new FormData(ctaForm),
+          headers: { Accept: 'application/json' },
+        });
+        if (res.ok) {
+          ctaForm.style.display = 'none';
+          if (ctaSuccess) ctaSuccess.style.display = 'flex';
+        } else {
+          throw new Error();
+        }
+      } catch (_) {
+        if (ctaBtn) ctaBtn.disabled = false;
+        if (ctaError) ctaError.style.display = 'flex';
+      }
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

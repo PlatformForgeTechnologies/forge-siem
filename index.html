@@ -29,6 +29,7 @@
     </a>
     <div class="nav-links">
       <a href="docs.html">Docs</a>
+      <a href="roadmap.html">Roadmap</a>
       <a href="https://github.com/PlatformForgeTechnologies" class="btn-ghost" target="_blank" rel="noopener">
         GitHub
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -59,36 +60,113 @@
       no runaway costs, no raw logs leaving your environment.
     </p>
 
-    <form
-      id="waitlist-form"
-      class="cs-form"
-      action="https://formspree.io/f/xwvjdoez"
-      method="POST"
-      novalidate
-    >
+    <!-- Step 1: email capture -->
+    <div id="cs-step-1" class="cs-form">
+      <div class="cs-progress" aria-hidden="true">
+        <span class="cs-prog-dot cs-prog-dot--active"></span>
+        <span class="cs-prog-dot"></span>
+      </div>
       <div class="cs-input-row">
         <input
-          id="email"
-          name="email"
+          id="cs-email"
           type="email"
           class="cs-email-input"
           placeholder="your@email.com"
           autocomplete="email"
-          required
           aria-label="Work email"
         />
-        <button type="submit" class="btn-primary cs-submit" id="submit-btn">
-          <span id="btn-text">Get early access</span>
-          <svg id="btn-spinner" class="cs-spinner" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none" aria-hidden="true">
-            <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-            <path d="M8 2 A6 6 0 0 1 14 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <button type="button" id="cs-continue" class="btn-primary cs-submit">
+          Continue
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M2 6H10M6.5 2.5L10 6L6.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       </div>
+      <p id="cs-email-err" class="cs-field-error" style="display:none">Enter a valid email address.</p>
       <p class="cs-hint">No spam. Just a note when we launch.</p>
+    </div>
+
+    <!-- Step 2: qualification -->
+    <form
+      id="cs-step-2"
+      class="cs-form"
+      action="https://formspree.io/f/xwvjdoez"
+      method="POST"
+      novalidate
+      style="display:none"
+    >
+      <input type="hidden" id="cs-hidden-email" name="email" />
+      <div class="cs-progress" aria-hidden="true">
+        <span class="cs-prog-dot cs-prog-dot--active"></span>
+        <span class="cs-prog-dot cs-prog-dot--active"></span>
+      </div>
+      <p class="cs-qual-intro">Quick context — helps us build the right things first.</p>
+      <div class="cs-qual-grid">
+        <div class="cs-qual-field">
+          <label for="q-endpoints">Servers / endpoints</label>
+          <div class="cs-select-wrap">
+            <select id="q-endpoints" name="endpoints">
+              <option value="">How many?</option>
+              <option value="lt10">Fewer than 10</option>
+              <option value="10-50">10 – 50</option>
+              <option value="50-200">50 – 200</option>
+              <option value="200+">200+</option>
+            </select>
+          </div>
+        </div>
+        <div class="cs-qual-field">
+          <label for="q-siem">Current SIEM</label>
+          <div class="cs-select-wrap">
+            <select id="q-siem" name="current_siem">
+              <option value="">Which one?</option>
+              <option value="none">No SIEM yet</option>
+              <option value="splunk">Splunk</option>
+              <option value="datadog">Datadog</option>
+              <option value="elastic">Elastic / ELK</option>
+              <option value="sentinel">Microsoft Sentinel</option>
+              <option value="wazuh">Wazuh</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="cs-qual-field">
+          <label for="q-infra">Primary infrastructure</label>
+          <div class="cs-select-wrap">
+            <select id="q-infra" name="infrastructure">
+              <option value="">Where do you run?</option>
+              <option value="aws">AWS</option>
+              <option value="azure">Azure</option>
+              <option value="gcp">GCP</option>
+              <option value="k8s-onprem">Kubernetes / On-prem</option>
+              <option value="multi">Multi-cloud</option>
+            </select>
+          </div>
+        </div>
+        <div class="cs-qual-field">
+          <label for="q-type">You protect</label>
+          <div class="cs-select-wrap">
+            <select id="q-type" name="account_type">
+              <option value="">Who?</option>
+              <option value="own">My own company</option>
+              <option value="msp">Multiple clients (MSP)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button type="submit" id="cs-submit" class="btn-primary cs-submit-final">
+        <span id="cs-submit-text">Join the waitlist</span>
+        <svg id="cs-spinner" class="cs-spinner" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none" aria-hidden="true">
+          <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+          <path d="M8 2 A6 6 0 0 1 14 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <p class="cs-hint">
+        <button type="button" id="cs-back" class="cs-back-btn">← Back</button>
+        &nbsp;&nbsp;All fields optional
+      </p>
     </form>
 
-    <div id="form-success" class="cs-success" role="alert" aria-live="polite" style="display:none">
+    <div id="cs-success" class="cs-success" role="alert" aria-live="polite" style="display:none">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
         <circle cx="9" cy="9" r="8" stroke="#22c55e" stroke-width="1.5"/>
         <path d="M5.5 9 L7.5 11 L12.5 6.5" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -96,7 +174,7 @@
       You're on the list — we'll be in touch.
     </div>
 
-    <div id="form-error" class="cs-error" role="alert" aria-live="polite" style="display:none">
+    <div id="cs-error" class="cs-error" role="alert" aria-live="polite" style="display:none">
       Something went wrong. Please try again.
     </div>
 
@@ -205,7 +283,7 @@
     <div class="cta-inner cs-cta">
       <h2>Be among the first to get access.</h2>
       <p>We're onboarding security teams in early access. Leave your email and we'll reach out when a spot opens up.</p>
-      <form class="cs-form cs-form--center" action="https://formspree.io/f/xwvjdoez" method="POST" novalidate>
+      <form id="cs-cta-form" class="cs-form cs-form--center" action="https://formspree.io/f/xwvjdoez" method="POST" novalidate>
         <div class="cs-input-row">
           <input
             name="email"
@@ -216,9 +294,19 @@
             required
             aria-label="Work email"
           />
-          <button type="submit" class="btn-primary">Join waitlist</button>
+          <button type="submit" id="cs-cta-btn" class="btn-primary">Join waitlist</button>
         </div>
       </form>
+      <div id="cs-cta-success" class="cs-success" role="alert" style="display:none; max-width:480px; margin:12px auto 0;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <circle cx="9" cy="9" r="8" stroke="#22c55e" stroke-width="1.5"/>
+          <path d="M5.5 9 L7.5 11 L12.5 6.5" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        You're on the list — we'll be in touch.
+      </div>
+      <div id="cs-cta-error" class="cs-error" role="alert" style="display:none; max-width:480px; margin:8px auto 0;">
+        Something went wrong. Please try again.
+      </div>
     </div>
   </div>
 </section>
@@ -236,6 +324,7 @@
     </a>
     <div class="footer-links">
       <a href="docs.html">Docs</a>
+      <a href="roadmap.html">Roadmap</a>
       <a href="https://github.com/PlatformForgeTechnologies" target="_blank" rel="noopener">GitHub</a>
     </div>
     <p class="footer-copy">© 2026 Platform Forge Technologies. All rights reserved.</p>
@@ -244,42 +333,116 @@
 
 <script>
 (function () {
-  document.querySelectorAll('.cs-form').forEach(function (form) {
-    form.addEventListener('submit', async function (e) {
+  var ENDPOINT = 'https://formspree.io/f/xwvjdoez';
+
+  // ── Hero two-step ─────────────────────────────────────────────────────
+  var step1       = document.getElementById('cs-step-1');
+  var step2       = document.getElementById('cs-step-2');
+  var success     = document.getElementById('cs-success');
+  var errorEl     = document.getElementById('cs-error');
+  var emailInput  = document.getElementById('cs-email');
+  var hiddenEmail = document.getElementById('cs-hidden-email');
+  var emailErr    = document.getElementById('cs-email-err');
+  var continueBtn = document.getElementById('cs-continue');
+  var backBtn     = document.getElementById('cs-back');
+  var submitBtn   = document.getElementById('cs-submit');
+  var submitText  = document.getElementById('cs-submit-text');
+  var spinner     = document.getElementById('cs-spinner');
+
+  function validEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  }
+
+  if (continueBtn) {
+    continueBtn.addEventListener('click', function () {
+      var val = emailInput ? emailInput.value.trim() : '';
+      if (!validEmail(val)) {
+        if (emailErr) emailErr.style.display = 'block';
+        if (emailInput) emailInput.focus();
+        return;
+      }
+      if (emailErr) emailErr.style.display = 'none';
+      if (hiddenEmail) hiddenEmail.value = val;
+      if (step1) step1.style.display = 'none';
+      if (step2) step2.style.display = 'block';
+    });
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); if (continueBtn) continueBtn.click(); }
+    });
+    emailInput.addEventListener('input', function () {
+      if (emailErr) emailErr.style.display = 'none';
+    });
+  }
+
+  if (backBtn) {
+    backBtn.addEventListener('click', function () {
+      if (step2) step2.style.display = 'none';
+      if (step1) step1.style.display = 'block';
+    });
+  }
+
+  if (step2) {
+    step2.addEventListener('submit', async function (e) {
       e.preventDefault();
-
-      var btn     = document.getElementById('submit-btn');
-      var btnText = document.getElementById('btn-text');
-      var spinner = document.getElementById('btn-spinner');
-      var success = document.getElementById('form-success');
-      var error   = document.getElementById('form-error');
-
-      if (btn) btn.disabled = true;
-      if (btnText) btnText.textContent = 'Sending…';
-      if (spinner) { spinner.style.display = 'inline-block'; }
-      if (error)   error.style.display = 'none';
+      if (submitBtn) submitBtn.disabled = true;
+      if (submitText) submitText.textContent = 'Joining…';
+      if (spinner) spinner.style.display = 'inline-block';
+      if (errorEl) errorEl.style.display = 'none';
 
       try {
-        var res = await fetch('https://formspree.io/f/xwvjdoez', {
+        var res = await fetch(ENDPOINT, {
           method: 'POST',
-          body: new FormData(form),
+          body: new FormData(step2),
           headers: { Accept: 'application/json' },
         });
-
         if (res.ok) {
-          form.style.display = 'none';
+          if (step2) step2.style.display = 'none';
           if (success) success.style.display = 'flex';
         } else {
-          throw new Error('failed');
+          throw new Error();
         }
       } catch (_) {
-        if (btn)    { btn.disabled = false; }
-        if (btnText) btnText.textContent = 'Get early access';
+        if (submitBtn) submitBtn.disabled = false;
+        if (submitText) submitText.textContent = 'Join the waitlist';
         if (spinner) spinner.style.display = 'none';
-        if (error)   error.style.display = 'flex';
+        if (errorEl) errorEl.style.display = 'flex';
       }
     });
-  });
+  }
+
+  // ── Bottom CTA form ───────────────────────────────────────────────────
+  var ctaForm    = document.getElementById('cs-cta-form');
+  var ctaSuccess = document.getElementById('cs-cta-success');
+  var ctaError   = document.getElementById('cs-cta-error');
+  var ctaBtn     = document.getElementById('cs-cta-btn');
+
+  if (ctaForm) {
+    ctaForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (ctaBtn) ctaBtn.disabled = true;
+      if (ctaError) ctaError.style.display = 'none';
+
+      try {
+        var res = await fetch(ENDPOINT, {
+          method: 'POST',
+          body: new FormData(ctaForm),
+          headers: { Accept: 'application/json' },
+        });
+        if (res.ok) {
+          ctaForm.style.display = 'none';
+          if (ctaSuccess) ctaSuccess.style.display = 'flex';
+        } else {
+          throw new Error();
+        }
+      } catch (_) {
+        if (ctaBtn) ctaBtn.disabled = false;
+        if (ctaError) ctaError.style.display = 'flex';
+      }
+    });
+  }
 })();
 </script>
 

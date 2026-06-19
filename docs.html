@@ -120,6 +120,7 @@
       <a href="index.html#architecture">Architecture</a>
       <a href="index.html#pricing">Pricing</a>
       <a href="docs.html" style="color:var(--text)">Docs</a>
+      <a href="roadmap.html">Roadmap</a>
       <a href="https://github.com/PlatformForgeTechnologies" class="btn-ghost" target="_blank" rel="noopener">
         GitHub
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 9.5 L9.5 2.5 M4 2.5 H9.5 V8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -133,117 +134,262 @@
   <aside class="docs-sidebar">
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Getting started</div>
-      <a href="#quickstart">Quickstart</a>
-      <a href="#prerequisites">Prerequisites</a>
-      <a href="#pi-install">Pi / single-node install</a>
+      <a href="#overview">Overview</a>
+      <a href="#how-byoc-works">How BYOC works</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Connect your environment</div>
+      <a href="#linux-onprem">Linux / On-prem</a>
+      <a href="#kubernetes">Kubernetes</a>
+      <a href="#network-requirements">Network requirements</a>
+      <a href="#aws">AWS</a>
+      <a href="#azure">Azure</a>
+      <a href="#gcp">GCP</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Agent reference</div>
+      <a href="#agent-enrollment">Enrollment</a>
+      <a href="#agent-config">Configuration</a>
+      <a href="#agent-collection">What the agent collects</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Self-hosted platform</div>
+      <a href="#self-hosted-overview">Overview</a>
+      <a href="#dev-install">Dev / single-node install</a>
       <a href="#production">Production install</a>
-    </div>
-    <div class="docs-sidebar-section">
-      <div class="docs-sidebar-label">Configuration</div>
       <a href="#values">values.yaml reference</a>
-      <a href="#secrets">Secrets</a>
-      <a href="#agents">Agent enrollment</a>
-      <a href="#smtp">Email / SMTP</a>
-    </div>
-    <div class="docs-sidebar-section">
-      <div class="docs-sidebar-label">Architecture</div>
-      <a href="#services">Service map</a>
-      <a href="#streams">Redis streams</a>
-      <a href="#storage">Storage backends</a>
-    </div>
-    <div class="docs-sidebar-section">
-      <div class="docs-sidebar-label">Operations</div>
       <a href="#argocd">ArgoCD setup</a>
       <a href="#scaling">Scaling (KEDA)</a>
       <a href="#upgrades">Upgrades</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Reference</div>
+      <a href="#services">Service map</a>
+      <a href="#streams">Redis streams</a>
+      <a href="#storage">Storage backends</a>
     </div>
   </aside>
 
   <!-- Main content -->
   <main class="docs-main">
 
-    <h1 id="quickstart">Quickstart</h1>
-    <p>Forge SIEM is a Kubernetes-native SIEM + EDR platform that ships as a Helm chart. This guide gets you from zero to your first alert in under 10 minutes on any cluster.</p>
+    <h1 id="overview">Overview</h1>
+    <p>Forge SIEM is a security information and event management platform built around one principle: <strong>your raw logs never leave your environment</strong>. Forge runs detection rules in memory and stores only alert metadata — not the underlying log data.</p>
+
+    <p>There are two ways to use Forge:</p>
+    <ul>
+      <li><strong>SaaS (BYOC)</strong> — You connect your servers and cloud accounts. Forge runs the control plane (rules engine, dashboard, alerting). Your raw logs stay in your environment. <em>This is the recommended path for most teams.</em></li>
+      <li><strong>Self-hosted</strong> — You deploy the full Forge platform into your own Kubernetes cluster using the Helm chart. You operate everything yourself.</li>
+    </ul>
 
     <div class="note">
-      <strong>Note:</strong> These instructions assume a working <code>kubectl</code> + Helm 3 setup. For local development, <a href="https://k3s.io" target="_blank" rel="noopener">k3s</a> or <a href="https://kind.sigs.k8s.io" target="_blank" rel="noopener">kind</a> work well.
+      <strong>Early access:</strong> Forge is currently in private early access. The SaaS platform is under active development. Join the waitlist at <a href="/">platformforgetechnologies.com</a> to be notified when access opens.
     </div>
 
-    <h3>1. Add the Helm repo</h3>
+    <!-- How BYOC works -->
+    <h2 id="how-byoc-works">How BYOC works</h2>
+    <p>In the SaaS (BYOC) model, there are two distinct planes:</p>
+
+    <ul>
+      <li><strong>Forge control plane</strong> — Hosted by Forge. Runs the detection rules engine, alert deduplication, dashboard, API, and notification dispatch. You access this at <code>app.platformforgetechnologies.com</code>.</li>
+      <li><strong>Your data plane</strong> — Runs in your environment. Consists of either the Forge agent (on servers) or cloud-native collectors (on AWS/Azure/GCP). Raw logs are processed transiently — rules fire in memory, raw data is never forwarded to Forge.</li>
+    </ul>
+
+    <p><strong>What Forge stores about you:</strong> alert metadata (rule name, severity, timestamp, affected host), agent heartbeats, your detection rules, and user accounts. Raw log content is never stored or transmitted to Forge infrastructure.</p>
+
+    <p><strong>What you install:</strong> Only the agent binary or a DaemonSet — not the full Helm chart. The Helm chart is Forge's own infrastructure, not yours.</p>
+
+    <!-- ── Connect your environment ── -->
+
+    <h2 id="linux-onprem">Linux / On-prem servers</h2>
+    <p>The Forge agent is a single Go binary that runs as a systemd service. It collects logs, monitors file integrity, tracks running processes, and ships events over mTLS to the Forge ingest endpoint.</p>
+
+    <h3>1. Generate an enrollment token</h3>
+    <p>In the Forge dashboard, go to <strong>Agents → Enrollment Tokens → New Token</strong>. Set an expiry and max-use count, then copy the token.</p>
+
+    <h3>2. Run the install script</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>shell — Linux</span></div>
+      <pre><code>curl -fsSL https://github.com/PlatformForgeTechnologies/\
+forge-siem-agent/releases/latest/download/install.sh \
+  | ENROLL_TOKEN=&lt;your-token&gt; sh</code></pre>
+    </div>
+
+    <p>That's all you need to provide. The script installs the agent binary, exchanges the token for a signed mTLS certificate (handled automatically — no certificate knowledge required), writes config to <code>/etc/forge-siem/</code>, and starts the <code>forge-siem-agent</code> systemd service. The agent appears in your dashboard within 30 seconds.</p>
+
+    <h3>Supported platforms</h3>
+    <table>
+      <thead><tr><th>OS</th><th>Arch</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Linux (Ubuntu 20.04+, Debian 11+, RHEL 8+)</td><td>amd64, arm64</td><td>Supported</td></tr>
+        <tr><td>macOS 13+</td><td>amd64, arm64</td><td>Supported</td></tr>
+        <tr><td>Windows Server 2019+</td><td>amd64</td><td>Coming soon</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Kubernetes -->
+    <h2 id="kubernetes">Kubernetes clusters</h2>
+    <p>For Kubernetes environments, the agent runs as a DaemonSet — one pod per node. Like the Linux install, you only need an enrollment token. The agent handles its own certificate exchange automatically on first run.</p>
+
+    <h3>1. Create an enrollment token</h3>
+    <p>In the Forge dashboard, go to <strong>Agents → Enrollment Tokens → New Token</strong>. Copy the token — it's the only credential you need.</p>
+
+    <h3>2. Create the namespace and token secret</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>shell</span></div>
+      <pre><code>kubectl create namespace siem
+kubectl create secret generic forge-enroll-token \
+  --namespace siem \
+  --from-literal=token=&lt;your-enrollment-token&gt;</code></pre>
+    </div>
+
+    <h3>3. Deploy the agent DaemonSet</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>shell</span></div>
+      <pre><code>kubectl apply -f https://github.com/PlatformForgeTechnologies/\
+forge-siem-agent/releases/latest/download/k8s/daemonset.yaml</code></pre>
+    </div>
+
+    <p>On first start, each pod reads the token from the secret, calls <code>POST /enroll</code> on the Forge API, receives its signed mTLS certificate, and immediately begins sending events. The certificate is persisted to the node's filesystem — subsequent restarts skip enrollment and go straight to connecting.</p>
+
+    <p>Each agent pod mounts <code>/var/log</code>, <code>/proc</code>, and the host root filesystem. It uses <code>hostNetwork</code> and <code>hostPID</code> so that active response actions apply to the host, not the container namespace.</p>
+
+    <div class="note">
+      <strong>Helm chart:</strong> A Helm chart (<code>forge-siem-agent</code>) is also available at <code>k8s/siem-agent/</code> in the agent repo for teams that manage deployments via GitOps. The chart requires pre-provisioned TLS secrets — use the DaemonSet path above for the simpler token-only flow.
+    </div>
+
+    <h2 id="network-requirements">Network requirements</h2>
+    <p>The Forge agent makes <strong>outbound-only</strong> connections. No inbound ports need to be opened. Every node running the agent needs egress access to the following:</p>
+
+    <table>
+      <thead><tr><th>Destination</th><th>Protocol / Port</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>api.platformforgetechnologies.com</td><td>HTTPS / TCP 443</td><td>Enrollment (one-time) and heartbeat API</td></tr>
+        <tr><td>ingest.platformforgetechnologies.com</td><td>mTLS TCP / 1514</td><td>Persistent event stream to Forge ingest</td></tr>
+      </tbody>
+    </table>
+
+    <div class="warn-note">
+      <strong>Port 1514 is not HTTPS.</strong> Most corporate firewalls and cloud security groups block outbound TCP on non-standard ports by default. You will need an explicit egress rule allowing TCP 1514 to <code>ingest.platformforgetechnologies.com</code> from each agent host or node.
+    </div>
+
+    <h3>AWS security group example</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>AWS — outbound rule (console or Terraform)</span></div>
+      <pre><code># Allow agents to reach Forge ingest
+Type:        Custom TCP
+Port range:  1514
+Destination: ingest.platformforgetechnologies.com  (or its resolved IP range)
+Description: Forge SIEM ingest (mTLS)
+
+# Allow enrollment + API (likely already open)
+Type:        HTTPS
+Port range:  443
+Destination: 0.0.0.0/0</code></pre>
+    </div>
+
+    <h3>iptables / nftables example</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>shell — on each host (or via Ansible)</span></div>
+      <pre><code>iptables -A OUTPUT -p tcp --dport 1514 \
+  -d ingest.platformforgetechnologies.com -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT</code></pre>
+    </div>
+
+    <!-- AWS -->
+    <h2 id="aws">AWS</h2>
+    <div class="warn-note">
+      <strong>Coming soon.</strong> AWS cloud integration is on the roadmap for early access. <a href="/">Join the waitlist</a> and select AWS as your infrastructure to be prioritised for early access.
+    </div>
+    <p>When available, the AWS integration will cover: CloudTrail, GuardDuty, VPC Flow Logs, S3 access logs, RDS audit logs, Lambda logs, and ECS/EKS activity. Setup will require a cross-account IAM role — no software installed in your account.</p>
+
+    <!-- Azure -->
+    <h2 id="azure">Azure</h2>
+    <div class="warn-note">
+      <strong>Coming soon.</strong> Azure integration will use a Service Principal with read-only access to Activity Log, Microsoft Defender alerts, and Azure AD sign-in logs.
+    </div>
+
+    <!-- GCP -->
+    <h2 id="gcp">GCP</h2>
+    <div class="warn-note">
+      <strong>Coming soon.</strong> GCP integration will use a Service Account with access to Cloud Audit Logs, Security Command Center findings, and VPC Flow Logs.
+    </div>
+
+    <!-- ── Agent reference ── -->
+
+    <h2 id="agent-enrollment">Agent enrollment</h2>
+    <p>Enrollment is a one-time process. The agent sends a CSR to <code>POST /enroll</code> on the Forge API, authenticated by a short-lived enrollment token. The API signs the CSR with the platform CA and returns a client certificate. The agent saves the certificate to <code>/etc/forge-siem/agent.crt</code> and uses it for all subsequent mTLS connections.</p>
+
+    <p>Enrollment tokens are scoped by max-use count and expiry. A token cannot be reused after expiry or after reaching its use limit — generate a new token for each batch of enrollments.</p>
+
+    <h3>Revoking an agent</h3>
+    <p>In the Forge dashboard, go to <strong>Agents</strong>, find the agent, and click <strong>Revoke</strong>. The agent's certificate is added to the CRL immediately. The agent will fail its next heartbeat check and stop sending events within 60 seconds.</p>
+
+    <!-- Agent config -->
+    <h2 id="agent-config">Agent configuration</h2>
+    <p>After enrollment, the agent writes its config to <code>/etc/forge-siem/config.yaml</code>. Key options:</p>
+
+    <table>
+      <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>ingest_host</td><td>(set during enrollment)</td><td>Forge ingest endpoint — do not change manually</td></tr>
+        <tr><td>log_paths</td><td>/var/log/**/*.log</td><td>Glob patterns for log files to tail</td></tr>
+        <tr><td>fim.paths</td><td>/etc, /usr/bin, /usr/sbin</td><td>Directories monitored for file integrity changes</td></tr>
+        <tr><td>fim.interval</td><td>30s</td><td>How often FIM baseline is re-checked</td></tr>
+        <tr><td>process.enabled</td><td>true</td><td>Whether to collect process creation events via /proc</td></tr>
+        <tr><td>heartbeat.interval</td><td>30s</td><td>Agent liveness heartbeat to the Forge API</td></tr>
+      </tbody>
+    </table>
+
+    <!-- What the agent collects -->
+    <h2 id="agent-collection">What the agent collects</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Source</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>Log events</td><td>File tailing (glob)</td><td>Auth logs, syslog, application logs, audit.log</td></tr>
+        <tr><td>File integrity</td><td>/proc + inotify</td><td>Hash changes, permission changes, new/deleted files in monitored paths</td></tr>
+        <tr><td>Process activity</td><td>/proc scan</td><td>New process creation, command-line args, parent PID</td></tr>
+        <tr><td>Heartbeat</td><td>Agent internal</td><td>Agent version, uptime, hostname — no log data</td></tr>
+      </tbody>
+    </table>
+
+    <p>All events are sent as JSON over a persistent mTLS TCP connection (port 1514). Events are buffered locally if the connection is interrupted and replayed on reconnect.</p>
+
+    <!-- ── Self-hosted platform ── -->
+
+    <h2 id="self-hosted-overview">Self-hosted platform</h2>
+    <p>If you want to run the entire Forge SIEM platform yourself — ingest, detection, storage, dashboard — you can deploy it into your own Kubernetes cluster using the Helm chart. This is the right path for air-gapped environments, strict data sovereignty requirements, or development/testing.</p>
+
+    <div class="note">
+      <strong>Self-hosted vs SaaS:</strong> In self-hosted mode, you operate everything: the control plane, the ingest pipeline, all storage backends, and the agent ingest endpoint. This requires significantly more infrastructure than the SaaS agent-only install.
+    </div>
+
+    <h2 id="dev-install">Dev / single-node install</h2>
+    <p>The <code>values-dev.yaml</code> overlay runs all dependencies in-cluster with conservative resource limits — suitable for any single-node dev or test cluster.</p>
+
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
       <pre><code>helm repo add forge-siem \
   https://platformforgetechnologies.github.io/forge-siem-platform
-helm repo update</code></pre>
-    </div>
-
-    <h3>2. Install</h3>
-    <p>For a Raspberry Pi 5 or any single-node cluster, use the bundled Pi overlay — it runs all dependencies in-cluster with conservative resource limits:</p>
-    <div class="code-block">
-      <div class="code-bar"><span>shell</span></div>
-      <pre><code>helm install siem forge-siem/siem \
-  --namespace siem --create-namespace \
-  -f https://raw.githubusercontent.com/PlatformForgeTechnologies/\
-forge-siem-platform/main/k8s-apps/siem/values-pi.yaml</code></pre>
-    </div>
-
-    <h3>3. Wait for pods to become ready</h3>
-    <div class="code-block">
-      <div class="code-bar"><span>shell</span></div>
-      <pre><code>kubectl get pods -n siem -w</code></pre>
-    </div>
-    <p>The bootstrap job runs first (PreSync hook), creates the PostgreSQL schema and ClickHouse tables, then the services start. Expect 2–4 minutes on first install.</p>
-
-    <h3>4. Access the dashboard</h3>
-    <div class="code-block">
-      <div class="code-bar"><span>shell — local port-forward</span></div>
-      <pre><code>kubectl port-forward -n siem svc/siem-dashboard 8080:80
-# Open http://localhost:8080</code></pre>
-    </div>
-    <p>Default credentials from <code>values-pi.yaml</code>: <code>admin@forge-siem.local</code> / <code>ForgeSIEM-pi-admin-2026</code>. Change these before exposing the cluster externally.</p>
-
-    <!-- Prerequisites -->
-    <h2 id="prerequisites">Prerequisites</h2>
-    <table>
-      <thead><tr><th>Component</th><th>Version</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td>Kubernetes</td><td>1.27+</td><td>k3s, k8s, EKS, GKE, AKS — any conformant cluster</td></tr>
-        <tr><td>Helm</td><td>3.12+</td><td>OCI registry support required for chart push</td></tr>
-        <tr><td>kubectl</td><td>matching cluster</td><td></td></tr>
-        <tr><td>Traefik</td><td>2.x / 3.x</td><td>Required only if <code>ingressRoute.enabled: true</code> — k3s ships it by default</td></tr>
-        <tr><td>KEDA</td><td>2.x</td><td>Required only if <code>keda.enabled: true</code> — disable for Pi/dev</td></tr>
-        <tr><td>ArgoCD</td><td>2.x+</td><td>Optional — see <a href="#argocd">ArgoCD setup</a></td></tr>
-      </tbody>
-    </table>
-
-    <!-- Pi install -->
-    <h2 id="pi-install">Pi / single-node install</h2>
-    <p>The <code>values-pi.yaml</code> overlay is the easiest way to run everything on constrained hardware. It sets:</p>
-    <ul>
-      <li>All dependencies (<code>postgres</code>, <code>redis</code>, <code>clickhouse</code>, <code>rabbitmq</code>) to <code>mode: self_hosted</code> — deployed in-cluster</li>
-      <li>Single replicas for all services</li>
-      <li>Conservative ClickHouse memory limits (4Gi max)</li>
-      <li>KEDA and serviceMonitor disabled</li>
-      <li>Static secrets (change before exposing publicly)</li>
-    </ul>
-
-    <div class="warn-note">
-      <strong>Warning:</strong> The static passwords in <code>values-pi.yaml</code> are public. Change <code>secrets.*</code> and <code>postgres.staticPassword</code> before exposing any port to the internet.
-    </div>
-
-    <h3>Customising Pi values</h3>
-    <p>Download <code>values-pi.yaml</code> locally and override what you need:</p>
-    <div class="code-block">
-      <div class="code-bar"><span>shell</span></div>
-      <pre><code>curl -fsSL https://raw.githubusercontent.com/PlatformForgeTechnologies/\
-forge-siem-platform/main/k8s-apps/siem/values-pi.yaml > my-values.yaml
-
-# Edit passwords, hostnames, resource limits
-vim my-values.yaml
+helm repo update
 
 helm install siem forge-siem/siem \
   --namespace siem --create-namespace \
-  -f my-values.yaml</code></pre>
+  -f https://raw.githubusercontent.com/PlatformForgeTechnologies/\
+forge-siem-platform/main/k8s-apps/siem/values-dev.yaml</code></pre>
+    </div>
+
+    <p>The bootstrap job runs first (PreSync hook), creates the PostgreSQL schema and ClickHouse tables, then the services start. Expect 2–4 minutes on first install. Access the dashboard:</p>
+
+    <div class="code-block">
+      <div class="code-bar"><span>shell</span></div>
+      <pre><code>kubectl port-forward -n siem svc/siem-dashboard 8080:80
+# Open http://localhost:8080
+# Default login: admin@forge-siem.local / ForgeSIEM-dev-admin-2026</code></pre>
+    </div>
+
+    <div class="warn-note">
+      <strong>Warning:</strong> The static passwords in <code>values-dev.yaml</code> are public. Change <code>secrets.*</code> and <code>postgres.staticPassword</code> before exposing any port to the internet.
     </div>
 
     <!-- Production -->
@@ -267,8 +413,6 @@ global:
   secretsManagerPath: myorg/forge-siem/secrets</code></pre>
     </div>
 
-    <p>The secrets manager path must contain keys matching the secret key references in <code>global.secretNames.*</code>. See the full <a href="#values">values reference</a> below.</p>
-
     <!-- Values reference -->
     <h2 id="values">values.yaml reference</h2>
     <table>
@@ -276,121 +420,18 @@ global:
       <tbody>
         <tr><td>namespace</td><td>siem</td><td>Kubernetes namespace for all resources</td></tr>
         <tr><td>images.*</td><td>GHCR tags</td><td>Image for each service — override for air-gapped deploys</td></tr>
-        <tr><td>global.imagePullPolicy</td><td>IfNotPresent</td><td></td></tr>
-        <tr><td>global.imagePullSecrets</td><td>[]</td><td>List of image pull secret names</td></tr>
-        <tr><td>global.stream.maxLen</td><td>100000</td><td>Redis stream MAXLEN trim for all streams</td></tr>
-        <tr><td>ingest.replicas</td><td>2</td><td>Ingest service replicas. Scale up for high agent count.</td></tr>
+        <tr><td>global.stream.maxLen</td><td>100000</td><td>Redis stream MAXLEN trim</td></tr>
+        <tr><td>ingest.replicas</td><td>2</td><td>Scale up for high agent count</td></tr>
         <tr><td>ingest.externalService.enabled</td><td>false</td><td>Expose ingest via LoadBalancer for external agents</td></tr>
         <tr><td>decoder.replicas</td><td>3</td><td>Scale with event volume (KEDA adjusts if enabled)</td></tr>
         <tr><td>api.enrollment.enabled</td><td>true</td><td>Enable agent enrollment PKI endpoint</td></tr>
-        <tr><td>api.enrollment.ingestHost</td><td>siem-ingest.siem.svc…</td><td>Ingest hostname given to enrolling agents</td></tr>
-        <tr><td>clickhouse.deploy</td><td>false</td><td>Set true to deploy ClickHouse in-cluster (Pi/dev)</td></tr>
-        <tr><td>clickhouse.storageSize</td><td>200Gi</td><td>ClickHouse PVC size when deployed in-cluster</td></tr>
+        <tr><td>clickhouse.deploy</td><td>false</td><td>Set true to deploy ClickHouse in-cluster (dev)</td></tr>
         <tr><td>bootstrap.clickhouse.eventsTTLDays</td><td>90</td><td>Events TTL in ClickHouse</td></tr>
         <tr><td>bootstrap.clickhouse.alertsTTLDays</td><td>365</td><td>Alerts TTL in ClickHouse</td></tr>
-        <tr><td>dashboard.host</td><td>siem.platformforge…</td><td>Hostname for Traefik IngressRoute</td></tr>
-        <tr><td>adminCenter.host</td><td>admin.platformforge…</td><td>Hostname for admin center IngressRoute</td></tr>
-        <tr><td>keda.enabled</td><td>true</td><td>Disable on Pi / clusters without KEDA operator</td></tr>
+        <tr><td>keda.enabled</td><td>true</td><td>Disable on clusters without KEDA operator</td></tr>
         <tr><td>ingressRoute.enabled</td><td>true</td><td>Disable if you manage ingress yourself</td></tr>
-        <tr><td>smokeTest.enabled</td><td>true</td><td>Post-install Helm test hook</td></tr>
       </tbody>
     </table>
-
-    <!-- Secrets -->
-    <h2 id="secrets">Secrets</h2>
-    <p>Forge SIEM needs the following credentials at runtime. In production they are pulled by External Secrets Operator from AWS Secrets Manager. In Pi/dev mode they are set directly in <code>values-pi.yaml</code>.</p>
-
-    <table>
-      <thead><tr><th>Secret key</th><th>Description</th></tr></thead>
-      <tbody>
-        <tr><td>postgres_dsn</td><td>PostgreSQL connection string (e.g. <code>postgres://user:pass@host/forge_siem</code>)</td></tr>
-        <tr><td>redis_username / redis_password</td><td>Redis auth credentials</td></tr>
-        <tr><td>clickhouse_addr / clickhouse_username / clickhouse_password</td><td>ClickHouse native protocol address and credentials</td></tr>
-        <tr><td>rabbitmq_url</td><td>AMQP URL (<code>amqp://user:pass@host:5672/</code>)</td></tr>
-        <tr><td>response_hmac_key</td><td>32-byte hex key for HMAC-signing active response commands</td></tr>
-        <tr><td>api_auth_token</td><td>Bearer token for internal service-to-service API calls</td></tr>
-        <tr><td>analyst_bootstrap_email / _name / _password</td><td>Admin account created on first bootstrap</td></tr>
-      </tbody>
-    </table>
-
-    <!-- Agent enrollment -->
-    <h2 id="agents">Agent enrollment</h2>
-    <p>Agents connect to the ingest service over mTLS. Before an agent can connect, it must enroll via the API to obtain a signed client certificate.</p>
-
-    <h3>1. Create an enrollment token (admin only)</h3>
-    <div class="code-block">
-      <div class="code-bar"><span>shell</span></div>
-      <pre><code>curl -s -X POST https://siem.example.com/api/v1/enrollment/tokens \
-  -H "Cookie: $SESSION_COOKIE" \
-  -H "Content-Type: application/json" \
-  -d '{"max_uses": 5, "ttl_hours": 24}' | jq .token</code></pre>
-    </div>
-
-    <h3>2. Install and enroll the agent</h3>
-    <div class="code-block">
-      <div class="code-bar"><span>shell — Linux / macOS</span></div>
-      <pre><code>curl -fsSL https://github.com/PlatformForgeTechnologies/\
-forge-siem-agent/releases/latest/download/install.sh \
-  | INGEST_HOST=siem-ingest.siem.svc.cluster.local \
-    ENROLL_TOKEN=&lt;token-from-step-1&gt; sh</code></pre>
-    </div>
-
-    <p>The agent will enroll via <code>POST /enroll</code>, receive a signed client certificate from the CA, save it to <code>/etc/forge-siem/agent.crt</code>, and start sending events immediately.</p>
-
-    <!-- SMTP -->
-    <h2 id="smtp">Email / SMTP</h2>
-    <p>SMTP is configured in the <strong>Admin Center</strong> under Platform Settings. The platform uses SMTP for alert notifications and (in future) user account emails.</p>
-    <p>Tested with <a href="https://www.brevo.com" target="_blank" rel="noopener">Brevo</a> (formerly Sendinblue) on port 2525 (alternative SMTP — Linode blocks 587). Ensure your sender domain is verified in your SMTP provider's dashboard before testing.</p>
-
-    <!-- Services -->
-    <h2 id="services">Service map</h2>
-    <table>
-      <thead><tr><th>Service</th><th>Port</th><th>Description</th></tr></thead>
-      <tbody>
-        <tr><td>ingest</td><td>1514 TCP</td><td>Accepts mTLS agent connections, writes to Redis raw stream</td></tr>
-        <tr><td>decoder</td><td>—</td><td>Normalises raw events, writes to ClickHouse + decoded stream</td></tr>
-        <tr><td>raw-archiver</td><td>—</td><td>Archives raw events to ClickHouse raw_events table</td></tr>
-        <tr><td>rules-engine</td><td>—</td><td>Evaluates decoded events against Sigma rules, emits alerts</td></tr>
-        <tr><td>alert-dedup</td><td>—</td><td>Deduplicates alerts via SHA-256 key + TTL in Redis</td></tr>
-        <tr><td>alert-indexer</td><td>—</td><td>Persists deduped alerts to ClickHouse + PostgreSQL</td></tr>
-        <tr><td>compliance-tagger</td><td>—</td><td>Maps MITRE ATT&amp;CK tags → CIS Controls v8 + NIST 800-53</td></tr>
-        <tr><td>response-orchestrator</td><td>—</td><td>Publishes deduped alerts to RabbitMQ exchange</td></tr>
-        <tr><td>notification-dispatcher</td><td>—</td><td>Sends Slack webhooks for high/critical alerts</td></tr>
-        <tr><td>vuln-service</td><td>—</td><td>Downloads NVD CVE feed, matches against agent package inventory</td></tr>
-        <tr><td>trivy-watcher</td><td>—</td><td>Polls Trivy Operator VulnerabilityReport CRDs, stores in PostgreSQL</td></tr>
-        <tr><td>collector</td><td>5515 HTTP / 5514 UDP</td><td>Agentless log collection via HTTP POST or UDP syslog</td></tr>
-        <tr><td>api</td><td>8080</td><td>REST API + SSE alert stream + enrollment endpoint</td></tr>
-        <tr><td>bootstrap</td><td>—</td><td>PreSync job — creates PostgreSQL schema + ClickHouse tables</td></tr>
-        <tr><td>dashboard</td><td>80</td><td>React SPA served by nginx, proxies /api to siem-api</td></tr>
-        <tr><td>admin-center</td><td>80</td><td>Separate admin React SPA (admin role only)</td></tr>
-      </tbody>
-    </table>
-
-    <!-- Streams -->
-    <h2 id="streams">Redis streams</h2>
-    <p>All inter-service communication uses Redis Streams with consumer groups. The stream topology is:</p>
-    <div class="code-block">
-      <div class="code-bar"><span>topology</span></div>
-      <pre><code>siem:raw-events      → decoder, raw-archiver
-siem:decoded-events  → rules-engine
-siem:alerts          → alert-dedup, alert-indexer, compliance-tagger
-siem:deduped-alerts  → response-orchestrator, notification-dispatcher</code></pre>
-    </div>
-    <p>Each consumer uses <code>XReadGroup</code> + <code>XAutoClaim</code> for at-least-once delivery with pending message recovery on restart.</p>
-
-    <!-- Storage -->
-    <h2 id="storage">Storage backends</h2>
-    <h3>ClickHouse</h3>
-    <p>ClickHouse holds the three hot-path tables:</p>
-    <ul>
-      <li><strong>forge_siem.events</strong> — decoded events, 90-day TTL by default</li>
-      <li><strong>forge_siem.alerts</strong> — alert records, 365-day TTL</li>
-      <li><strong>forge_siem.raw_events</strong> — raw agent payloads, 90-day TTL</li>
-    </ul>
-    <p>All tables use MergeTree with <code>LowCardinality(String)</code> for high-cardinality fields and <code>Map(String,String)</code> for dynamic extra fields. Bootstrap creates the database and tables idempotently on every deploy.</p>
-
-    <h3>PostgreSQL</h3>
-    <p>PostgreSQL holds operational state: agents, rules, CVEs, cases, hunts, response log, analyst accounts, notification destinations, and the audit log. Schema is applied by the bootstrap job via idempotent <code>IF NOT EXISTS</code> DDL in <code>db/schema.sql</code>.</p>
 
     <!-- ArgoCD -->
     <h2 id="argocd">ArgoCD setup</h2>
@@ -410,38 +451,71 @@ spec:
     targetRevision: main
     path: k8s-apps/siem
     helm:
-      valueFiles: [values-pi.yaml]   # or your own overlay
+      valueFiles: [values-dev.yaml]
   destination:
     server: https://kubernetes.default.svc
     namespace: siem
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true</code></pre>
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]</code></pre>
     </div>
 
     <!-- Scaling -->
     <h2 id="scaling">Scaling with KEDA</h2>
-    <p>When <code>keda.enabled: true</code>, KEDA ScaledObjects are created for <code>decoder</code> and <code>rules-engine</code>. They scale on Redis stream consumer lag — if the raw events stream falls behind, more decoder pods are spawned automatically.</p>
-    <p>Minimum replicas: 1. Maximum replicas: 10 (decoder), 5 (rules-engine). Adjust via <code>values.yaml</code> under <code>decoder.keda.*</code>.</p>
-    <p>All other services use standard HPA or static replica counts.</p>
+    <p>When <code>keda.enabled: true</code>, KEDA ScaledObjects are created for <code>decoder</code> and <code>rules-engine</code>. They scale on Redis stream consumer lag. Minimum replicas: 1. Maximum: 10 (decoder), 5 (rules-engine). Adjust via <code>decoder.keda.*</code> in values.</p>
 
     <!-- Upgrades -->
     <h2 id="upgrades">Upgrades</h2>
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
       <pre><code>helm repo update forge-siem
-helm upgrade siem forge-siem/siem \
-  --namespace siem \
-  -f my-values.yaml</code></pre>
+helm upgrade siem forge-siem/siem --namespace siem -f my-values.yaml</code></pre>
     </div>
-    <p>The bootstrap job re-runs on every upgrade via the PreSync hook, applying any new schema migrations idempotently. No manual DB migration steps are needed.</p>
+    <p>The bootstrap job re-runs on every upgrade via the PreSync hook, applying schema migrations idempotently. No manual DB migration steps are needed.</p>
 
-    <div class="note">
-      <strong>Note:</strong> If you are using ArgoCD with <code>automated.selfHeal</code>, upgrades happen automatically when the chart version changes in the repo. The bootstrap job will run before any service is updated.
+    <!-- ── Reference ── -->
+
+    <h2 id="services">Service map</h2>
+    <table>
+      <thead><tr><th>Service</th><th>Port</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>ingest</td><td>1514 TCP</td><td>Accepts mTLS agent connections, writes to Redis raw stream</td></tr>
+        <tr><td>decoder</td><td>—</td><td>Normalises raw events, writes to ClickHouse + decoded stream</td></tr>
+        <tr><td>raw-archiver</td><td>—</td><td>Archives raw events to ClickHouse raw_events table</td></tr>
+        <tr><td>rules-engine</td><td>—</td><td>Evaluates decoded events against Sigma rules, emits alerts</td></tr>
+        <tr><td>alert-dedup</td><td>—</td><td>Deduplicates alerts via SHA-256 key + TTL in Redis</td></tr>
+        <tr><td>alert-indexer</td><td>—</td><td>Persists deduped alerts to ClickHouse + PostgreSQL</td></tr>
+        <tr><td>compliance-tagger</td><td>—</td><td>Maps MITRE ATT&amp;CK tags → CIS Controls v8 + NIST 800-53</td></tr>
+        <tr><td>response-orchestrator</td><td>—</td><td>Publishes deduped alerts to RabbitMQ exchange</td></tr>
+        <tr><td>notification-dispatcher</td><td>—</td><td>Sends Slack webhooks for high/critical alerts</td></tr>
+        <tr><td>vuln-service</td><td>—</td><td>Downloads NVD CVE feed, matches against agent package inventory</td></tr>
+        <tr><td>collector</td><td>5515 HTTP / 5514 UDP</td><td>Agentless log collection via HTTP POST or UDP syslog</td></tr>
+        <tr><td>api</td><td>8080</td><td>REST API + SSE alert stream + enrollment endpoint</td></tr>
+        <tr><td>bootstrap</td><td>—</td><td>PreSync job — creates PostgreSQL schema + ClickHouse tables</td></tr>
+        <tr><td>dashboard</td><td>80</td><td>React SPA served by nginx, proxies /api to siem-api</td></tr>
+        <tr><td>admin-center</td><td>80</td><td>Separate admin React SPA (admin role only)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="streams">Redis streams</h2>
+    <div class="code-block">
+      <div class="code-bar"><span>topology</span></div>
+      <pre><code>siem:raw-events      → decoder, raw-archiver
+siem:decoded-events  → rules-engine
+siem:alerts          → alert-dedup, alert-indexer, compliance-tagger
+siem:deduped-alerts  → response-orchestrator, notification-dispatcher</code></pre>
     </div>
+
+    <h2 id="storage">Storage backends</h2>
+    <h3>ClickHouse</h3>
+    <ul>
+      <li><strong>forge_siem.events</strong> — decoded events, 90-day TTL</li>
+      <li><strong>forge_siem.alerts</strong> — alert records, 365-day TTL</li>
+      <li><strong>forge_siem.raw_events</strong> — raw agent payloads, 90-day TTL</li>
+    </ul>
+
+    <h3>PostgreSQL</h3>
+    <p>Operational state: agents, rules, CVEs, cases, analyst accounts, audit log, enrollment tokens. Schema applied idempotently by bootstrap on every deploy.</p>
 
   </main>
 </div>
@@ -459,6 +533,7 @@ helm upgrade siem forge-siem/siem \
     </div>
     <div class="footer-links">
       <a href="index.html">Home</a>
+      <a href="roadmap.html">Roadmap</a>
       <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform/issues" target="_blank" rel="noopener">Issues</a>
       <a href="mailto:hello@platformforgetechnologies.com">Contact</a>

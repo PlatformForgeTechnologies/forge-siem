@@ -594,6 +594,257 @@ code { font-family: var(--font-mono); font-size: 0.9em; }
 .cs-cta h2 { font-size: clamp(24px, 4vw, 36px); font-weight: 700; letter-spacing: -.02em; margin-bottom: 12px; }
 .cs-cta p  { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; }
 
+/* ── Two-step waitlist form ─────────────────────────────────────────────── */
+.cs-progress {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; margin-bottom: 16px;
+}
+
+.cs-prog-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border); transition: background .25s;
+}
+
+.cs-prog-dot--active { background: var(--accent); }
+
+.cs-qual-intro {
+  font-size: 13px; color: var(--text-muted);
+  text-align: center; margin-bottom: 14px;
+}
+
+.cs-qual-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 14px; text-align: left;
+}
+
+.cs-qual-field label {
+  display: block; margin-bottom: 5px;
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--text-muted); font-family: var(--font-mono);
+}
+
+.cs-select-wrap { position: relative; }
+
+.cs-select-wrap::after {
+  content: '';
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-muted);
+  pointer-events: none;
+}
+
+.cs-qual-field select {
+  width: 100%;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-size: 13px; font-family: var(--font-sans);
+  padding: 9px 28px 9px 11px;
+  appearance: none; -webkit-appearance: none;
+  cursor: pointer; transition: border-color .15s;
+}
+
+.cs-qual-field select:focus {
+  outline: none; border-color: rgba(230,57,70,.45);
+}
+
+.cs-qual-field select option { background: #1e232b; color: var(--text); }
+
+.cs-submit-final {
+  width: 100%; justify-content: center;
+  padding: 11px; font-size: 14px;
+  border: none; cursor: pointer; margin-bottom: 4px;
+}
+
+.cs-submit-final:disabled { opacity: .65; cursor: not-allowed; }
+
+.cs-back-btn {
+  background: none; border: none;
+  color: var(--text-muted); font-size: 12px;
+  cursor: pointer; font-family: var(--font-sans);
+  padding: 0; transition: color .15s;
+}
+.cs-back-btn:hover { color: var(--text); }
+
+.cs-field-error {
+  font-size: 12px; color: var(--accent);
+  text-align: left; margin-top: 6px;
+}
+
+/* ── Roadmap page ─────────────────────────────────────────────────────── */
+.rm-hero {
+  padding: 80px 0 48px;
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(230,57,70,.08) 0%, transparent 70%);
+  text-align: center;
+}
+
+.rm-hero-content { max-width: 560px; margin: 0 auto; }
+.rm-hero h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700; line-height: 1.1;
+  letter-spacing: -.03em;
+  margin-bottom: 16px;
+}
+.rm-hero-sub {
+  font-size: 16px; color: var(--text-muted); line-height: 1.7;
+}
+
+.rm-timeline { padding: 0 0 80px; }
+
+.rm-phase {
+  position: relative;
+  padding-left: 40px;
+  padding-bottom: 48px;
+}
+.rm-phase:last-child { padding-bottom: 0; }
+
+.rm-phase::before {
+  content: '';
+  position: absolute;
+  left: 15px; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.rm-phase:last-child::before { display: none; }
+
+.rm-phase-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.rm-phase-marker {
+  position: absolute;
+  left: -40px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.rm-phase-marker--done {
+  background: rgba(34,197,94,.12);
+  border: 2px solid rgba(34,197,94,.4);
+  color: var(--ok);
+}
+
+.rm-phase-marker--current {
+  background: rgba(230,57,70,.12);
+  border: 2px solid rgba(230,57,70,.4);
+}
+
+.rm-phase-marker--planned {
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+}
+
+.rm-pulse {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.rm-phase-date {
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.rm-phase-title {
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1.3;
+}
+
+.rm-status {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rm-status--done {
+  background: rgba(34,197,94,.1);
+  color: var(--ok);
+  border: 1px solid rgba(34,197,94,.25);
+}
+
+.rm-status--current {
+  background: rgba(230,57,70,.08);
+  color: var(--accent);
+  border: 1px solid rgba(230,57,70,.25);
+}
+
+.rm-status--planned {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.rm-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rm-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color .15s;
+}
+.rm-item:hover { border-color: #404855; }
+
+.rm-item-icon {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 7px;
+}
+
+.rm-item-icon--done {
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(34,197,94,.35);
+}
+
+.rm-item-icon--current {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(230,57,70,.35);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.rm-item-icon--planned {
+  background: var(--text-muted);
+  opacity: .4;
+}
+
+.rm-item-body h3 {
+  font-size: 14px; font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.rm-item-body p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -621,4 +872,12 @@ code { font-family: var(--font-mono); font-size: 0.9em; }
   .cs-input-row { flex-direction: column; padding: 10px; }
   .cs-submit    { width: 100%; justify-content: center; }
   .cs-headline  { font-size: clamp(32px, 8vw, 48px); }
+  .cs-qual-grid { grid-template-columns: 1fr; }
+
+  .rm-phase { padding-left: 32px; }
+  .rm-phase-marker { left: -32px; width: 26px; height: 26px; }
+  .rm-phase::before { left: 12px; }
+  .rm-phase-header { flex-wrap: wrap; }
+  .rm-status { margin-left: 0; }
+  .rm-item { padding: 14px 16px; }
 }
