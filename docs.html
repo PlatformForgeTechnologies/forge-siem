@@ -139,7 +139,7 @@
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Connect your environment</div>
-      <a href="#linux-onprem">Linux / On-prem</a>
+      <a href="#linux-onprem">Linux / macOS / Windows</a>
       <a href="#kubernetes">Kubernetes</a>
       <a href="#network-requirements">Network requirements</a>
       <a href="#aws">AWS</a>
@@ -201,29 +201,48 @@
 
     <!-- ── Connect your environment ── -->
 
-    <h2 id="linux-onprem">Linux / On-prem servers</h2>
-    <p>The Forge agent is a single Go binary that runs as a systemd service. It collects logs, monitors file integrity, tracks running processes, and ships events over mTLS to the Forge ingest endpoint.</p>
+    <h2 id="linux-onprem">Linux / macOS / Windows servers</h2>
+    <p>The Forge agent is a single Go binary. On Linux it runs as a systemd service, on macOS as a launchd daemon, and on Windows as a Windows Service. It collects logs, monitors file integrity, tracks running processes, and ships events over mTLS to the Forge ingest endpoint.</p>
 
     <h3>1. Generate an enrollment token</h3>
     <p>In the Forge dashboard, go to <strong>Agents → Enrollment Tokens → New Token</strong>. Set an expiry and max-use count, then copy the token.</p>
 
     <h3>2. Run the install script</h3>
     <div class="code-block">
-      <div class="code-bar"><span>shell — Linux</span></div>
-      <pre><code>curl -fsSL https://github.com/PlatformForgeTechnologies/\
-forge-siem-agent/releases/latest/download/install.sh \
-  | ENROLL_TOKEN=&lt;your-token&gt; sh</code></pre>
+      <div class="code-bar"><span>shell — Linux / macOS</span></div>
+      <pre><code>curl -fsSL https://platformforge.com/install.sh \
+  | sudo ENROLL_TOKEN=&lt;your-token&gt; INGEST_URL=https://siem-api.example.com sh</code></pre>
     </div>
 
-    <p>That's all you need to provide. The script installs the agent binary, exchanges the token for a signed mTLS certificate (handled automatically — no certificate knowledge required), writes config to <code>/etc/forge-siem/</code>, and starts the <code>forge-siem-agent</code> systemd service. The agent appears in your dashboard within 30 seconds.</p>
+    <p>The script detects your OS and architecture, downloads the correct binary from GitHub Releases, writes enrollment config to <code>/etc/forge-siem-agent/</code>, and registers a systemd service (Linux) or launchd daemon (macOS). On first start the agent exchanges the token for a signed mTLS certificate automatically — no certificate knowledge required. The agent appears in your dashboard within 30 seconds.</p>
+
+    <h4>Windows</h4>
+    <div class="code-block">
+      <div class="code-bar"><span>PowerShell — Run as Administrator</span></div>
+      <pre><code>$env:ENROLL_TOKEN = "&lt;your-token&gt;"
+$env:INGEST_URL   = "https://siem-api.example.com"
+irm https://platformforge.com/install.ps1 | iex</code></pre>
+    </div>
+
+    <p>The PowerShell script installs the binary to <code>C:\Program Files\ForgeSIEM\</code>, writes config to <code>C:\ProgramData\ForgeSIEM\</code>, and registers a Windows Service with automatic restart on failure.</p>
+
+    <h4>Uninstall</h4>
+    <div class="code-block">
+      <div class="code-bar"><span>shell — Linux / macOS</span></div>
+      <pre><code>curl -fsSL https://platformforge.com/uninstall.sh | sudo sh</code></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-bar"><span>PowerShell — Windows (Administrator)</span></div>
+      <pre><code>irm https://platformforge.com/uninstall.ps1 | iex</code></pre>
+    </div>
 
     <h3>Supported platforms</h3>
     <table>
       <thead><tr><th>OS</th><th>Arch</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>Linux (Ubuntu 20.04+, Debian 11+, RHEL 8+)</td><td>amd64, arm64</td><td>Supported</td></tr>
+        <tr><td>Linux (Ubuntu 20.04+, Debian 11+, RHEL 8+)</td><td>amd64, arm64, armv7</td><td>Supported</td></tr>
         <tr><td>macOS 13+</td><td>amd64, arm64</td><td>Supported</td></tr>
-        <tr><td>Windows Server 2019+</td><td>amd64</td><td>Coming soon</td></tr>
+        <tr><td>Windows Server 2019+</td><td>amd64</td><td>Supported</td></tr>
       </tbody>
     </table>
 
