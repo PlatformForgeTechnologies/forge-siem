@@ -136,6 +136,7 @@
       <div class="docs-sidebar-label">Getting started</div>
       <a href="#overview">Overview</a>
       <a href="#how-byoc-works">How BYOC works</a>
+      <a href="#byoc-install">Deploy BYOC data plane</a>
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Connect your environment</div>
@@ -174,30 +175,80 @@
   <main class="docs-main">
 
     <h1 id="overview">Overview</h1>
-    <p>Forge SIEM is a security information and event management platform built around one principle: <strong>your raw logs never leave your environment</strong>. Forge runs detection rules in memory and stores only alert metadata — not the underlying log data.</p>
+    <p>Forge SIEM is a security information and event management platform. <strong>Your raw events never leave your environment.</strong> Every customer — regardless of deployment mode — uses the Forge-hosted dashboard at <code>app.platformforgegroup.com</code>. What varies is where the data lives.</p>
 
-    <p>There are two ways to use Forge:</p>
+    <p>There are two deployment modes:</p>
     <ul>
-      <li><strong>SaaS (BYOC)</strong> — You connect your servers and cloud accounts. Forge runs the control plane (rules engine, dashboard, alerting). Your raw logs stay in your environment. <em>This is the recommended path for most teams.</em></li>
-      <li><strong>Self-hosted</strong> — You deploy the full Forge platform into your own Kubernetes cluster using the Helm chart. You operate everything yourself.</li>
+      <li><strong>Forge-hosted</strong> — Forge runs the full pipeline. You install only the agent. Events flow to Forge ingest; detection, storage, alerting, and the dashboard are all managed for you. No infrastructure to operate. <em>This is the recommended path for most teams.</em></li>
+      <li><strong>BYOC (Bring Your Own Cloud)</strong> — Your raw events stay in your own cloud. You deploy the Forge data plane (ingest, detection, storage, relay) into your Kubernetes cluster via the BYOC Helm chart. Forge hosts the dashboard and control plane; your analysts access it at <code>app.platformforgegroup.com</code> exactly as they would in Forge-hosted. This is the right path for regulated industries or strict data residency requirements.</li>
     </ul>
 
     <div class="note">
-      <strong>Early access:</strong> Forge is currently in private early access. The SaaS platform is under active development. Join the waitlist at <a href="/">platformforgetechnologies.com</a> to be notified when access opens.
+      <strong>Early access:</strong> Forge is currently in private early access. The platform is under active development. Join the waitlist at <a href="/">platformforgegroup.com</a> to be notified when access opens.
     </div>
 
     <!-- How BYOC works -->
     <h2 id="how-byoc-works">How BYOC works</h2>
-    <p>In the SaaS (BYOC) model, there are two distinct planes:</p>
+    <p>In BYOC mode, there are two distinct planes. <strong>The dashboard is always Forge-hosted — you do not run it yourself.</strong></p>
 
     <ul>
-      <li><strong>Forge control plane</strong> — Hosted by Forge. Runs the detection rules engine, alert deduplication, dashboard, API, and notification dispatch. You access this at <code>app.platformforgetechnologies.com</code>.</li>
-      <li><strong>Your data plane</strong> — Runs in your environment. Consists of either the Forge agent (on servers) or cloud-native collectors (on AWS/Azure/GCP). Raw logs are processed transiently — rules fire in memory, raw data is never forwarded to Forge.</li>
+      <li><strong>Forge control plane</strong> — Hosted by Forge at <code>app.platformforgegroup.com</code>. Runs the dashboard, API, admin portal, alert deduplication, notification dispatch, and rule management. This is what your analysts log into — you never deploy or operate it.</li>
+      <li><strong>Your data plane</strong> — Deployed into your Kubernetes cluster via <code>helm install</code>. Runs: <code>ingest</code> (receives agent events over mTLS), <code>decoder</code>, <code>raw-archiver</code>, <code>rules-engine</code>, <code>alert-indexer</code>, and <code>relay</code>. Events are stored in your own ClickHouse and PostgreSQL — Forge never receives raw log content.</li>
     </ul>
 
-    <p><strong>What Forge stores about you:</strong> alert metadata (rule name, severity, timestamp, affected host), agent heartbeats, your detection rules, and user accounts. Raw log content is never stored or transmitted to Forge infrastructure.</p>
+    <p>The <strong>relay</strong> is a lightweight HTTP service inside your cluster. When an analyst opens the dashboard, Forge's central API queries the relay — the relay executes the query against your local ClickHouse and returns the result. Raw events never cross the internet; only query results (aggregated stats, alert records, agent list) are returned to the Forge dashboard on demand.</p>
 
-    <p><strong>What you install:</strong> Only the agent binary or a DaemonSet — not the full Helm chart. The Helm chart is Forge's own infrastructure, not yours.</p>
+    <div class="code-block">
+      <div class="code-bar"><span>BYOC data flow</span></div>
+      <pre><code>Your agent  →  ingest  →  decoder  →  rules-engine  →  alert-indexer
+                                  ↓                              ↓
+                           raw-archiver              ClickHouse + PostgreSQL
+                                                              ↓
+                                                           relay  ←  Forge dashboard (app.platformforgegroup.com)
+</code></pre>
+    </div>
+
+    <p><strong>What Forge stores:</strong> your account, team, billing, rules, and alert metadata (rule name, severity, timestamp, affected host). Raw log content and raw events are never stored or transmitted to Forge infrastructure.</p>
+
+    <p><strong>What you install for BYOC:</strong> the BYOC Helm chart (data plane services) and the agent on each server. You supply your own PostgreSQL, Redis, and ClickHouse (e.g. RDS + ElastiCache + ClickHouse Cloud). Forge generates a relay API key in the admin portal; you put it in your Helm values.</p>
+
+    <!-- ── BYOC data plane install ── -->
+
+    <h2 id="byoc-install">Deploy the BYOC data plane</h2>
+    <p>If you're using BYOC, you deploy the Forge data plane into your own Kubernetes cluster before installing any agents. The data plane includes ingest, decoder, rules engine, alert indexer, raw archiver, and relay.</p>
+
+    <h3>Prerequisites</h3>
+    <ul>
+      <li>Kubernetes cluster (EKS, GKE, AKS, or self-managed)</li>
+      <li>PostgreSQL (e.g. RDS, Cloud SQL) — operational state</li>
+      <li>Redis (e.g. ElastiCache, Upstash) — event stream bus</li>
+      <li>ClickHouse (e.g. ClickHouse Cloud, Altinity) — hot event storage</li>
+      <li>A relay API key — generated in the Forge admin portal under <strong>Tenants → [your tenant] → Data Plane → Connect</strong></li>
+      <li>A public hostname for the relay (LoadBalancer IP or domain) so Forge can reach it</li>
+    </ul>
+
+    <h3>Install</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>shell</span></div>
+      <pre><code>helm repo add forge-siem \
+  https://platformforgegroup.github.io/forge-siem-charts
+helm repo update
+
+helm install forge-byoc forge-siem/siem-byoc \
+  --namespace forge-byoc --create-namespace \
+  --set forge.tenantID=&lt;your-tenant-id&gt; \
+  --set forge.relayAPIKey=&lt;fdp_key-from-admin-portal&gt; \
+  --set forge.relayPublicURL=https://&lt;relay-hostname-or-ip&gt; \
+  --set dependencies.postgres.dsn="postgres://user:pass@host:5432/db" \
+  --set dependencies.redis.addr="redis-host:6379" \
+  --set dependencies.clickhouse.addr="clickhouse-host:9000"</code></pre>
+    </div>
+
+    <p>After install, go back to <strong>Tenants → Data Plane</strong> in the admin portal and click <strong>Ping</strong> to confirm the relay is reachable. Once the relay is connected, your analysts will see data from your environment in the Forge dashboard within a few minutes of agents enrolling.</p>
+
+    <div class="note">
+      <strong>Relay security:</strong> The relay only accepts requests bearing the <code>fdp_*</code> Bearer token you set. All traffic uses TLS. The relay never initiates outbound connections — Forge always calls in.
+    </div>
 
     <!-- ── Connect your environment ── -->
 
@@ -210,7 +261,7 @@
     <h3>2. Run the install script</h3>
     <div class="code-block">
       <div class="code-bar"><span>shell — Linux / macOS</span></div>
-      <pre><code>curl -fsSL https://platformforge.com/install.sh \
+      <pre><code>curl -fsSL https://platformforgegroup.com/install.sh \
   | sudo ENROLL_TOKEN=&lt;your-token&gt; INGEST_URL=https://siem-api.example.com sh</code></pre>
     </div>
 
@@ -221,7 +272,7 @@
       <div class="code-bar"><span>PowerShell — Run as Administrator</span></div>
       <pre><code>$env:ENROLL_TOKEN = "&lt;your-token&gt;"
 $env:INGEST_URL   = "https://siem-api.example.com"
-irm https://platformforge.com/install.ps1 | iex</code></pre>
+irm https://platformforgegroup.com/install.ps1 | iex</code></pre>
     </div>
 
     <p>The PowerShell script installs the binary to <code>C:\Program Files\ForgeSIEM\</code>, writes config to <code>C:\ProgramData\ForgeSIEM\</code>, and registers a Windows Service with automatic restart on failure.</p>
@@ -229,11 +280,11 @@ irm https://platformforge.com/install.ps1 | iex</code></pre>
     <h4>Uninstall</h4>
     <div class="code-block">
       <div class="code-bar"><span>shell — Linux / macOS</span></div>
-      <pre><code>curl -fsSL https://platformforge.com/uninstall.sh | sudo sh</code></pre>
+      <pre><code>curl -fsSL https://platformforgegroup.com/uninstall.sh | sudo sh</code></pre>
     </div>
     <div class="code-block">
       <div class="code-bar"><span>PowerShell — Windows (Administrator)</span></div>
-      <pre><code>irm https://platformforge.com/uninstall.ps1 | iex</code></pre>
+      <pre><code>irm https://platformforgegroup.com/uninstall.ps1 | iex</code></pre>
     </div>
 
     <h3>Supported platforms</h3>
@@ -374,13 +425,13 @@ iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT</code></pre>
 
     <p>All events are sent as JSON over a persistent mTLS TCP connection (port 1514). Events are buffered locally if the connection is interrupted and replayed on reconnect.</p>
 
-    <!-- ── Self-hosted platform ── -->
+    <!-- ── Development / air-gapped install ── -->
 
-    <h2 id="self-hosted-overview">Self-hosted platform</h2>
-    <p>If you want to run the entire Forge SIEM platform yourself — ingest, detection, storage, dashboard — you can deploy it into your own Kubernetes cluster using the Helm chart. This is the right path for air-gapped environments, strict data sovereignty requirements, or development/testing.</p>
+    <h2 id="self-hosted-overview">Development / air-gapped install</h2>
+    <p>The full Helm chart (<code>k8s-apps/siem/</code>) deploys every Forge service — ingest, detection, storage, dashboard — into a single Kubernetes cluster. This mode is intended for local development, CI environments, and air-gapped deployments where calling out to Forge infrastructure is not possible.</p>
 
     <div class="note">
-      <strong>Self-hosted vs SaaS:</strong> In self-hosted mode, you operate everything: the control plane, the ingest pipeline, all storage backends, and the agent ingest endpoint. This requires significantly more infrastructure than the SaaS agent-only install.
+      <strong>Not a commercial tier:</strong> In production, all customers use either Forge-hosted or BYOC — both of which use the Forge-managed dashboard at <code>app.platformforgegroup.com</code>. The full self-contained chart is a development convenience and air-gapped escape hatch, not a supported commercial deployment path.
     </div>
 
     <h2 id="dev-install">Dev / single-node install</h2>
@@ -389,7 +440,7 @@ iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT</code></pre>
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
       <pre><code>helm repo add forge-siem \
-  https://platformforgetechnologies.github.io/forge-siem-platform
+  https://platformforgegroup.github.io/forge-siem-charts
 helm repo update
 
 helm install siem forge-siem/siem \
@@ -500,7 +551,7 @@ helm upgrade siem forge-siem/siem --namespace siem -f my-values.yaml</code></pre
       <tbody>
         <tr><td>ingest</td><td>1514 TCP</td><td>Accepts mTLS agent connections, writes to Redis raw stream</td></tr>
         <tr><td>decoder</td><td>—</td><td>Normalises raw events, writes to ClickHouse + decoded stream</td></tr>
-        <tr><td>raw-archiver</td><td>—</td><td>Archives raw events to ClickHouse raw_events table</td></tr>
+        <tr><td>raw-archiver</td><td>—</td><td>Archives raw events to ClickHouse raw_events table; dual-writes Parquet to S3-compatible object storage when <code>ARCHIVAL_ENABLED=true</code></td></tr>
         <tr><td>rules-engine</td><td>—</td><td>Evaluates decoded events against Sigma rules, emits alerts</td></tr>
         <tr><td>alert-dedup</td><td>—</td><td>Deduplicates alerts via SHA-256 key + TTL in Redis</td></tr>
         <tr><td>alert-indexer</td><td>—</td><td>Persists deduped alerts to ClickHouse + PostgreSQL</td></tr>
