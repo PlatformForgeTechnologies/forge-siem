@@ -234,20 +234,19 @@
   https://platformforgegroup.github.io/forge-siem-charts
 helm repo update
 
-helm install forge-byoc forge-siem/siem-byoc \
+helm install forge-byoc forge-siem/forge-siem-data-plane \
   --namespace forge-byoc --create-namespace \
   --set forge.tenantID=&lt;your-tenant-id&gt; \
   --set forge.relayAPIKey=&lt;fdp_key-from-admin-portal&gt; \
-  --set forge.relayPublicURL=https://&lt;relay-hostname-or-ip&gt; \
   --set dependencies.postgres.dsn="postgres://user:pass@host:5432/db" \
   --set dependencies.redis.addr="redis-host:6379" \
   --set dependencies.clickhouse.addr="clickhouse-host:9000"</code></pre>
     </div>
 
-    <p>After install, go back to <strong>Tenants → Data Plane</strong> in the admin portal and click <strong>Ping</strong> to confirm the relay is reachable. Once the relay is connected, your analysts will see data from your environment in the Forge dashboard within a few minutes of agents enrolling.</p>
+    <p>The relay dials out to Forge over a persistent WebSocket — no inbound ports, no LoadBalancer, no firewall rules required. After install, the connection status appears automatically in <strong>Tenants → Data Plane</strong> in the admin portal. Once connected, your analysts will see data from your environment in the Forge dashboard within a few minutes of agents enrolling.</p>
 
     <div class="note">
-      <strong>Relay security:</strong> The relay only accepts requests bearing the <code>fdp_*</code> Bearer token you set. All traffic uses TLS. The relay never initiates outbound connections — Forge always calls in.
+      <strong>Relay security:</strong> The relay authenticates to Forge using the <code>fdp_*</code> Bearer token over TLS. It only dials outbound on port 443 — Forge never initiates a connection into your cluster and no inbound ports are opened.
     </div>
 
     <!-- ── Connect your environment ── -->
