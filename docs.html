@@ -334,12 +334,12 @@ forge-siem-agent/releases/latest/download/k8s/daemonset.yaml</code></pre>
       <thead><tr><th>Destination</th><th>Protocol / Port</th><th>Purpose</th></tr></thead>
       <tbody>
         <tr><td>api.platformforgetechnologies.com</td><td>HTTPS / TCP 443</td><td>Enrollment (one-time) and heartbeat API</td></tr>
-        <tr><td>ingest.platformforgetechnologies.com</td><td>mTLS TCP / 1514</td><td>Persistent event stream to Forge ingest</td></tr>
+        <tr><td>ingest.platformforgegroup.com</td><td>mTLS TCP / 1514</td><td>Persistent event stream to Forge ingest</td></tr>
       </tbody>
     </table>
 
     <div class="warn-note">
-      <strong>Port 1514 is not HTTPS.</strong> Most corporate firewalls and cloud security groups block outbound TCP on non-standard ports by default. You will need an explicit egress rule allowing TCP 1514 to <code>ingest.platformforgetechnologies.com</code> from each agent host or node.
+      <strong>Port 1514 is not HTTPS.</strong> Most corporate firewalls and cloud security groups block outbound TCP on non-standard ports by default. You will need an explicit egress rule allowing TCP 1514 to <code>ingest.platformforgegroup.com</code> from each agent host or node.
     </div>
 
     <h3>AWS security group example</h3>
@@ -348,7 +348,7 @@ forge-siem-agent/releases/latest/download/k8s/daemonset.yaml</code></pre>
       <pre><code># Allow agents to reach Forge ingest
 Type:        Custom TCP
 Port range:  1514
-Destination: ingest.platformforgetechnologies.com  (or its resolved IP range)
+Destination: ingest.platformforgegroup.com  (or its resolved IP range)
 Description: Forge SIEM ingest (mTLS)
 
 # Allow enrollment + API (likely already open)
@@ -361,7 +361,7 @@ Destination: 0.0.0.0/0</code></pre>
     <div class="code-block">
       <div class="code-bar"><span>shell — on each host (or via Ansible)</span></div>
       <pre><code>iptables -A OUTPUT -p tcp --dport 1514 \
-  -d ingest.platformforgetechnologies.com -j ACCEPT
+  -d ingest.platformforgegroup.com -j ACCEPT
 iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT</code></pre>
     </div>
 
@@ -434,18 +434,14 @@ iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT</code></pre>
     </div>
 
     <h2 id="dev-install">Dev / single-node install</h2>
-    <p>The <code>values-dev.yaml</code> overlay runs all dependencies in-cluster with conservative resource limits — suitable for any single-node dev or test cluster.</p>
+    <p>The <code>values-dev.yaml</code> overlay runs all dependencies in-cluster with conservative resource limits — suitable for any single-node dev or test cluster. The full platform Helm chart lives in the private <code>forge-siem-platform</code> repo (<code>k8s-apps/siem/</code>); clone the repo first, then install from the local chart directory.</p>
 
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
-      <pre><code>helm repo add forge-siem \
-  https://platformforgegroup.github.io/forge-siem-charts
-helm repo update
-
-helm install siem forge-siem/siem \
+      <pre><code>git clone https://github.com/PlatformForgeTechnologies/forge-siem-platform.git
+helm install siem ./forge-siem-platform/k8s-apps/siem \
   --namespace siem --create-namespace \
-  -f https://raw.githubusercontent.com/PlatformForgeTechnologies/\
-forge-siem-platform/main/k8s-apps/siem/values-dev.yaml</code></pre>
+  -f ./forge-siem-platform/k8s-apps/siem/values-dev.yaml</code></pre>
     </div>
 
     <p>The bootstrap job runs first (PreSync hook), creates the PostgreSQL schema and ClickHouse tables, then the services start. Expect 2–4 minutes on first install. Access the dashboard:</p>
@@ -488,7 +484,7 @@ global:
       <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td>namespace</td><td>siem</td><td>Kubernetes namespace for all resources</td></tr>
-        <tr><td>images.*</td><td>GHCR tags</td><td>Image for each service — override for air-gapped deploys</td></tr>
+        <tr><td>images.*</td><td>Docker Hub (<code>apanisile/forge-siem-*</code>)</td><td>Image for each service — override for air-gapped deploys</td></tr>
         <tr><td>global.stream.maxLen</td><td>100000</td><td>Redis stream MAXLEN trim</td></tr>
         <tr><td>ingest.replicas</td><td>2</td><td>Scale up for high agent count</td></tr>
         <tr><td>ingest.externalService.enabled</td><td>false</td><td>Expose ingest via LoadBalancer for external agents</td></tr>
@@ -537,8 +533,8 @@ spec:
     <h2 id="upgrades">Upgrades</h2>
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
-      <pre><code>helm repo update forge-siem
-helm upgrade siem forge-siem/siem --namespace siem -f my-values.yaml</code></pre>
+      <pre><code>cd forge-siem-platform && git pull
+helm upgrade siem ./k8s-apps/siem --namespace siem -f ./k8s-apps/siem/my-values.yaml</code></pre>
     </div>
     <p>The bootstrap job re-runs on every upgrade via the PreSync hook, applying schema migrations idempotently. No manual DB migration steps are needed.</p>
 
