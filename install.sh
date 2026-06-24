@@ -3,11 +3,11 @@
 # Supports Linux (amd64, arm64, armv7) and macOS (amd64, arm64).
 #
 # Usage:
-#   curl -fsSL https://platformforge.com/install.sh | sudo ENROLL_TOKEN=tok_xxx INGEST_URL=https://api.example.com sh
+#   curl -fsSL https://platformforgegroup.com/install.sh | sudo ENROLLMENT_TOKEN=enr_xxx bash
 #
 # Environment variables:
-#   ENROLL_TOKEN   (required)  Enrollment token from Forge SIEM admin API
-#   INGEST_URL     (required)  API endpoint URL (e.g. https://siem-api.example.com)
+#   ENROLLMENT_TOKEN (required) Enrollment token from Forge SIEM Settings → Enrollment
+#   INGEST_URL       (optional) Override ingest endpoint (default: ingest.platformforgegroup.com)
 #   AGENT_VERSION  (optional)  Specific version to install (default: latest)
 #   INSTALL_DIR    (optional)  Binary install path (default: /usr/local/bin)
 #   SKIP_SERVICE   (optional)  Set to "1" to skip service registration
@@ -46,7 +46,7 @@ install_systemd_service() {
   cat > "/etc/systemd/system/${SERVICE_NAME}.service" <<UNIT
 [Unit]
 Description=Forge SIEM Agent
-Documentation=https://platformforge.com/docs
+Documentation=https://platformforgegroup.com/docs
 After=network-online.target
 Wants=network-online.target
 
@@ -119,10 +119,14 @@ PLISTEOF
 
 # ── Preflight checks ────────────────────────────────────────────────────
 
-[ "$(id -u)" -ne 0 ] && die "Run as root: curl -fsSL ... | sudo ENROLL_TOKEN=xxx INGEST_URL=xxx sh"
+[ "$(id -u)" -ne 0 ] && die "Run as root: curl -fsSL https://platformforgegroup.com/install.sh | sudo ENROLLMENT_TOKEN=enr_xxx bash"
 
-[ -z "${ENROLL_TOKEN:-}" ] && die "ENROLL_TOKEN is required. Create one via: POST /api/v1/enrollment/tokens"
-[ -z "${INGEST_URL:-}" ]   && die "INGEST_URL is required (e.g. https://siem-api.example.com)"
+# Accept ENROLLMENT_TOKEN (preferred) or legacy ENROLL_TOKEN.
+ENROLL_TOKEN="${ENROLLMENT_TOKEN:-${ENROLL_TOKEN:-}}"
+[ -z "$ENROLL_TOKEN" ] && die "ENROLLMENT_TOKEN is required. Generate one from Settings → Enrollment in Forge SIEM."
+
+# Default ingest endpoint.
+INGEST_URL="${INGEST_URL:-https://ingest.platformforgegroup.com}"
 
 command -v curl >/dev/null 2>&1 || die "curl is required but not installed"
 
