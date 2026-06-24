@@ -303,29 +303,22 @@ irm https://platformforgegroup.com/install.ps1 | iex</code></pre>
     <h3>1. Create an enrollment token</h3>
     <p>In the Forge dashboard, go to <strong>Agents → Enrollment Tokens → New Token</strong>. Copy the token — it's the only credential you need.</p>
 
-    <h3>2. Create the namespace and token secret</h3>
+    <h3>2. Deploy the agent DaemonSet via Helm</h3>
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
-      <pre><code>kubectl create namespace siem
-kubectl create secret generic forge-enroll-token \
-  --namespace siem \
-  --from-literal=token=&lt;your-enrollment-token&gt;</code></pre>
+      <pre><code>helm repo add forge-siem \
+  https://platformforgegroup.github.io/forge-siem-charts
+helm repo update
+
+helm install forge-agent forge-siem/forge-siem-agent \
+  --namespace forge-siem-agent --create-namespace \
+  --set enrollment.token=&lt;your-enrollment-token&gt; \
+  --set enrollment.groups[0]=&lt;cluster-name&gt;</code></pre>
     </div>
 
-    <h3>3. Deploy the agent DaemonSet</h3>
-    <div class="code-block">
-      <div class="code-bar"><span>shell</span></div>
-      <pre><code>kubectl apply -f https://github.com/PlatformForgeTechnologies/\
-forge-siem-agent/releases/latest/download/k8s/daemonset.yaml</code></pre>
-    </div>
+    <p>On first start, each pod reads the token from the Helm values, calls <code>POST /enroll</code> on the Forge API, receives its signed mTLS certificate, and immediately begins sending events. The certificate is persisted to the node's filesystem — subsequent restarts skip enrollment and go straight to connecting.</p>
 
-    <p>On first start, each pod reads the token from the secret, calls <code>POST /enroll</code> on the Forge API, receives its signed mTLS certificate, and immediately begins sending events. The certificate is persisted to the node's filesystem — subsequent restarts skip enrollment and go straight to connecting.</p>
-
-    <p>Each agent pod mounts <code>/var/log</code>, <code>/proc</code>, and the host root filesystem. It uses <code>hostNetwork</code> and <code>hostPID</code> so that active response actions apply to the host, not the container namespace.</p>
-
-    <div class="note">
-      <strong>Helm chart:</strong> A Helm chart (<code>forge-siem-agent</code>) is also available at <code>k8s/siem-agent/</code> in the agent repo for teams that manage deployments via GitOps. The chart requires pre-provisioned TLS secrets — use the DaemonSet path above for the simpler token-only flow.
-    </div>
+    <p>Each agent pod mounts <code>/var/log</code> and <code>/proc</code> from the host. <code>hostPID: true</code> lets active response actions apply to host processes, not the container namespace. RBAC is created automatically (<code>rbac.create: true</code> by default) so the agent can read pod and node metadata for context enrichment.</p>
 
     <h2 id="network-requirements">Network requirements</h2>
     <p>The Forge agent makes <strong>outbound-only</strong> connections. No inbound ports need to be opened. Every node running the agent needs egress access to the following:</p>
@@ -333,7 +326,7 @@ forge-siem-agent/releases/latest/download/k8s/daemonset.yaml</code></pre>
     <table>
       <thead><tr><th>Destination</th><th>Protocol / Port</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td>api.platformforgetechnologies.com</td><td>HTTPS / TCP 443</td><td>Enrollment (one-time) and heartbeat API</td></tr>
+        <tr><td>api.platformforgegroup.com</td><td>HTTPS / TCP 443</td><td>Enrollment (one-time) and heartbeat API</td></tr>
         <tr><td>ingest.platformforgegroup.com</td><td>mTLS TCP / 1514</td><td>Persistent event stream to Forge ingest</td></tr>
       </tbody>
     </table>
@@ -434,14 +427,14 @@ iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT</code></pre>
     </div>
 
     <h2 id="dev-install">Dev / single-node install</h2>
-    <p>The <code>values-dev.yaml</code> overlay runs all dependencies in-cluster with conservative resource limits — suitable for any single-node dev or test cluster. The full platform Helm chart lives in the private <code>forge-siem-platform</code> repo (<code>k8s-apps/siem/</code>); clone the repo first, then install from the local chart directory.</p>
+    <p>The <code>values-pi.yaml</code> overlay runs all dependencies in-cluster with conservative resource limits — suitable for any single-node dev or test cluster. The full platform Helm chart lives in the private <code>forge-siem-platform</code> repo (<code>k8s-apps/siem/</code>); clone the repo first, then install from the local chart directory.</p>
 
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
       <pre><code>git clone https://github.com/PlatformForgeTechnologies/forge-siem-platform.git
 helm install siem ./forge-siem-platform/k8s-apps/siem \
   --namespace siem --create-namespace \
-  -f ./forge-siem-platform/k8s-apps/siem/values-dev.yaml</code></pre>
+  -f ./forge-siem-platform/k8s-apps/siem/values-pi.yaml</code></pre>
     </div>
 
     <p>The bootstrap job runs first (PreSync hook), creates the PostgreSQL schema and ClickHouse tables, then the services start. Expect 2–4 minutes on first install. Access the dashboard:</p>
@@ -454,7 +447,7 @@ helm install siem ./forge-siem-platform/k8s-apps/siem \
     </div>
 
     <div class="warn-note">
-      <strong>Warning:</strong> The static passwords in <code>values-dev.yaml</code> are public. Change <code>secrets.*</code> and <code>postgres.staticPassword</code> before exposing any port to the internet.
+      <strong>Warning:</strong> The static passwords in <code>values-pi.yaml</code> are public. Change <code>secrets.*</code> and <code>postgres.staticPassword</code> before exposing any port to the internet.
     </div>
 
     <!-- Production -->
@@ -516,7 +509,7 @@ spec:
     targetRevision: main
     path: k8s-apps/siem
     helm:
-      valueFiles: [values-dev.yaml]
+      valueFiles: [values-pi.yaml]
   destination:
     server: https://kubernetes.default.svc
     namespace: siem
@@ -533,8 +526,10 @@ spec:
     <h2 id="upgrades">Upgrades</h2>
     <div class="code-block">
       <div class="code-bar"><span>shell</span></div>
-      <pre><code>cd forge-siem-platform && git pull
-helm upgrade siem ./k8s-apps/siem --namespace siem -f ./k8s-apps/siem/my-values.yaml</code></pre>
+      <pre><code>git -C forge-siem-platform pull
+helm upgrade siem ./forge-siem-platform/k8s-apps/siem \
+  --namespace siem \
+  -f ./forge-siem-platform/k8s-apps/siem/values-pi.yaml</code></pre>
     </div>
     <p>The bootstrap job re-runs on every upgrade via the PreSync hook, applying schema migrations idempotently. No manual DB migration steps are needed.</p>
 
@@ -558,7 +553,6 @@ helm upgrade siem ./k8s-apps/siem --namespace siem -f ./k8s-apps/siem/my-values.
         <tr><td>api</td><td>8080</td><td>REST API + SSE alert stream + enrollment endpoint</td></tr>
         <tr><td>bootstrap</td><td>—</td><td>PreSync job — creates PostgreSQL schema + ClickHouse tables</td></tr>
         <tr><td>dashboard</td><td>80</td><td>React SPA served by nginx, proxies /api to siem-api</td></tr>
-        <tr><td>admin-center</td><td>80</td><td>Separate admin React SPA (admin role only)</td></tr>
       </tbody>
     </table>
 
@@ -601,7 +595,7 @@ siem:deduped-alerts  → response-orchestrator, notification-dispatcher</code></
       <a href="roadmap.html">Roadmap</a>
       <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/PlatformForgeTechnologies/forge-siem-platform/issues" target="_blank" rel="noopener">Issues</a>
-      <a href="mailto:hello@platformforgetechnologies.com">Contact</a>
+      <a href="mailto:hello@platformforgegroup.com">Contact</a>
     </div>
   </div>
 </footer>
