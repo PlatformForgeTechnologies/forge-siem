@@ -164,6 +164,14 @@
       <a href="#upgrades">Upgrades</a>
     </div>
     <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">SaaS connectors</div>
+      <a href="#saas-okta">Okta</a>
+      <a href="#saas-github">GitHub Audit Log</a>
+      <a href="#saas-m365">Microsoft 365</a>
+      <a href="#saas-slack">Slack Enterprise</a>
+      <a href="#saas-cloudflare">Cloudflare</a>
+    </div>
+    <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Notifications</div>
       <a href="#notifications-overview">Overview</a>
       <a href="#notifications-slack">Slack</a>
@@ -171,6 +179,16 @@
       <a href="#notifications-webhook">Generic webhook</a>
       <a href="#notifications-pagerduty">PagerDuty</a>
       <a href="#notifications-teams">Microsoft Teams</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Investigation</div>
+      <a href="#investigation-timeline">Alert timeline</a>
+      <a href="#investigation-explain">AI alert explanation</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Compliance &amp; identity</div>
+      <a href="#compliance-export">PDF export</a>
+      <a href="#scim">SCIM provisioning</a>
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Reference</div>
@@ -545,6 +563,88 @@ helm upgrade siem ./forge-siem-platform/k8s-apps/siem \
 
     <!-- ── Reference ── -->
 
+    <!-- ── SaaS connectors ── -->
+
+    <h2 id="saas-connectors">SaaS connectors</h2>
+    <p>SaaS ingest services poll third-party audit log APIs on a per-tenant basis. Each service reads credentials from the <code>tenant_capabilities</code> table (set via the dashboard's <strong>Settings → Integrations</strong> onboarding wizard). Events are published to <code>siem:raw-events</code> and flow through the same decode → rules → alert pipeline as agent events.</p>
+
+    <h3 id="saas-okta">Okta</h3>
+    <p>Polls the <a href="https://developer.okta.com/docs/reference/api/system-log/" target="_blank" rel="noopener">Okta System Log API</a> every 5 minutes. Required capability config: <code>org_url</code> (e.g. <code>https://yourorg.okta.com</code>) and <code>api_token</code> (a read-only API token with <code>okta.logs.read</code> scope).</p>
+    <p>Events are normalised to <code>source: okta</code>, <code>category: authentication</code>. Severity is elevated to <code>high</code> for policy or security event types and to <code>medium</code> for failed outcomes.</p>
+
+    <h3 id="saas-github">GitHub Audit Log</h3>
+    <p>Polls the <a href="https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/using-the-audit-log-api-for-your-enterprise" target="_blank" rel="noopener">GitHub Audit Log streaming API</a> with cursor-based pagination. Required capability config: <code>org</code> (GitHub org slug) and <code>token</code> (a fine-grained PAT with <code>read:audit_log</code> permission).</p>
+    <p>Events are normalised to <code>source: github</code>, <code>category: audit</code>. Actor, repo, and action fields are extracted.</p>
+
+    <h3 id="saas-m365">Microsoft 365</h3>
+    <p>Polls the <a href="https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-reference" target="_blank" rel="noopener">Office 365 Management Activity API</a> using an OAuth client-credentials flow per tenant. Required capability config: <code>tenant_id</code>, <code>client_id</code>, <code>client_secret</code>.</p>
+    <p>Covers audit records from Exchange, SharePoint, Teams, Azure AD, and Defender. Events are normalised to <code>source: m365</code>, <code>category: audit</code>.</p>
+
+    <h3 id="saas-slack">Slack Enterprise</h3>
+    <p>Polls the <a href="https://api.slack.com/admins/audit-logs" target="_blank" rel="noopener">Slack Audit Logs API v1</a> every 5 minutes. Requires a Slack Enterprise Grid workspace. Required capability config: <code>token</code> (an OAuth token with <code>auditlogs:read</code> scope).</p>
+    <p>Events are normalised to <code>source: slack</code>, <code>category: saas</code>. High-severity events include admin privilege grants, workspace exports, bulk session resets, and SSO disablement. 15 detection rules in <code>saas-slack.yaml</code> cover the most common Slack-specific attack patterns.</p>
+
+    <h3 id="saas-cloudflare">Cloudflare</h3>
+    <p>Polls the <a href="https://developers.cloudflare.com/logs/logpull/" target="_blank" rel="noopener">Cloudflare Logpull API</a> every 2 minutes. The service automatically respects Cloudflare's ~2-minute propagation lag — it always pulls <code>[last_poll_end, now − 2 min]</code> to avoid missing or duplicating events. Required capability config: <code>zone_id</code> and <code>api_token</code> (with <code>Logs Read</code> permission).</p>
+    <p>Fields collected: client IP, request host/method/URI, HTTP status, WAF action, WAF rule ID, bot score, country, user agent, ASN. Events are normalised to <code>source: cloudflare</code>, <code>category: web</code> (WAF events) or <code>network</code> (other). 15 detection rules in <code>saas-cloudflare.yaml</code> cover WAF blocks, path traversal, Log4Shell, SSRF, scan tools, and bot management.</p>
+
+    <!-- ── Investigation ── -->
+
+    <h2 id="investigation">Alert investigation</h2>
+    <p>When you open an alert in the dashboard, Forge automatically loads a ±30-minute investigation context — surrounding events, an AI-generated explanation, and suggested remediation steps. No manual query is required.</p>
+
+    <h3 id="investigation-timeline">Alert timeline</h3>
+    <p>The alert drawer fetches <code>GET /api/v1/alerts/:id/timeline</code> on open. The backend queries ClickHouse for events within ±30 minutes of the alert's firing time, scoped to the same agent, source IP, or process name as the alert. The response includes:</p>
+    <ul>
+      <li><strong>Activity histogram</strong> — bucketed event counts rendered as an inline SVG bar chart with a red marker at the alert's exact firing time. Spikes before the alert time indicate reconnaissance or lateral movement; spikes after may indicate exfiltration or persistence.</li>
+      <li><strong>Event list</strong> — up to 150 surrounding events with timestamp, source, severity, and raw message. Click any event to expand all decoded fields.</li>
+      <li><strong>Query</strong> — the ClickHouse query used, shown so analysts can reproduce or extend it in the Logs page.</li>
+    </ul>
+
+    <h3 id="investigation-explain">AI alert explanation</h3>
+    <p>The alert drawer also fetches <code>GET /api/v1/alerts/:id/explain</code>. This endpoint builds a context bundle from the alert record, matched detection rule, enrichment results (AbuseIPDB, GreyNoise, VirusTotal, IOC feed), and up to 20 surrounding timeline events. It then calls a configured OpenAI-compatible LLM endpoint to generate a structured explanation.</p>
+    <p>The response includes: <code>summary</code>, <code>rationale</code> (bullet list of evidence), <code>recommended_actions</code>, and <code>notable_fields</code> (key-value pairs highlighted for the analyst). If the LLM endpoint is unavailable or returns an error, the explainer falls back to a deterministic heuristic that generates an explanation from the alert attributes alone — the UI never shows an empty explanation.</p>
+    <p>Configure the explainer via env vars on the <code>api</code> service:</p>
+    <table>
+      <thead><tr><th>Env var</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>ALERT_EXPLAINER_ENABLED</code></td><td><code>true</code></td><td>Set <code>false</code> to use heuristic only.</td></tr>
+        <tr><td><code>ALERT_EXPLAINER_API_URL</code></td><td>—</td><td>OpenAI-compatible endpoint (e.g. <code>https://api.openai.com/v1</code>).</td></tr>
+        <tr><td><code>ALERT_EXPLAINER_API_KEY</code></td><td>—</td><td>Bearer token for the LLM API.</td></tr>
+        <tr><td><code>ALERT_EXPLAINER_MODEL</code></td><td><code>gpt-4.1-mini</code></td><td>Model name to use.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ── Compliance export ── -->
+
+    <h2 id="compliance-export">Compliance PDF export</h2>
+    <p>Analysts and auditors can download a PDF compliance report directly from the dashboard under <strong>Reports → Compliance</strong>. Reports are generated on-demand by <code>GET /api/v1/compliance/:framework/export</code> (requires <code>security_admin</code> role or higher).</p>
+    <p>Supported frameworks:</p>
+    <ul>
+      <li><strong>NIST 800-53</strong> — control families mapped from MITRE ATT&amp;CK tags on triggered alerts</li>
+      <li><strong>PCI DSS v4.0</strong> — requirements 10 (logging), 11 (security testing), 12 (security policy)</li>
+      <li><strong>ISO 27001</strong> — Annex A controls relevant to detection and response</li>
+      <li><strong>CIS Controls v8</strong> — Implementation Groups 1–3 mapped from compliance_tagger output</li>
+    </ul>
+    <p>Each report includes: control summary table (pass/partial/not-assessed per control), alert volume by framework control over the selected date range, and a raw evidence appendix listing the top 50 relevant alerts.</p>
+
+    <!-- ── SCIM ── -->
+
+    <h2 id="scim">SCIM group provisioning</h2>
+    <p>Forge implements SCIM 2.0 for group-to-role synchronisation from identity providers (Okta, Entra ID, JumpCloud, etc.). The SCIM endpoint is at <code>/scim/v2/Groups</code> and supports <code>GET</code>, <code>POST</code>, <code>PUT</code>, and <code>DELETE</code> operations on groups.</p>
+    <p>Group display names are mapped to Forge roles using a prefix convention:</p>
+    <table>
+      <thead><tr><th>IdP group name prefix</th><th>Forge role</th></tr></thead>
+      <tbody>
+        <tr><td><code>forge-admin</code></td><td><code>platform_admin</code></td></tr>
+        <tr><td><code>forge-security</code></td><td><code>security_admin</code></td></tr>
+        <tr><td><code>forge-responder</code></td><td><code>responder</code></td></tr>
+        <tr><td><code>forge-analyst</code></td><td><code>analyst</code></td></tr>
+      </tbody>
+    </table>
+    <p>Authentication uses a static Bearer token. Set <code>SCIM_TOKEN</code> on the <code>api</code> service and paste the same value into your IdP's SCIM app configuration. The SCIM base URL to configure in your IdP is <code>https://&lt;your-api-host&gt;/scim/v2</code>.</p>
+    <p>When a user is removed from all mapped groups, their account is deactivated in Forge but not deleted — audit history is preserved.</p>
+
     <!-- ── Notifications ── -->
 
     <h2 id="notifications-overview">Notifications</h2>
@@ -672,6 +772,11 @@ def verify(body: bytes, secret: str, sig_header: str) -> bool:
         <tr><td>aws-ingest</td><td>—</td><td>Polls CloudTrail and GuardDuty for AWS cloud events; writes to raw stream as virtual agent events</td></tr>
         <tr><td>azure-ingest</td><td>—</td><td>Polls Azure Activity Log via Management REST API; writes to raw stream</td></tr>
         <tr><td>gcp-ingest</td><td>—</td><td>Polls GCP Cloud Audit Logs via Logging REST API; writes to raw stream</td></tr>
+        <tr><td>okta-ingest</td><td>—</td><td>Polls Okta System Log API per tenant; credentials from <code>tenant_capabilities</code> (<code>capability='okta'</code>)</td></tr>
+        <tr><td>github-ingest</td><td>—</td><td>Polls GitHub Audit Log streaming API with cursor pagination; per-tenant org + token from <code>tenant_capabilities</code></td></tr>
+        <tr><td>m365-ingest</td><td>—</td><td>Polls Microsoft 365 Unified Audit Log via Management API with per-tenant OAuth client-credentials flow</td></tr>
+        <tr><td>slack-ingest</td><td>—</td><td>Polls Slack Enterprise Audit Logs API; per-tenant Bearer token from <code>tenant_capabilities</code> (<code>capability='slack'</code>)</td></tr>
+        <tr><td>cloudflare-ingest</td><td>—</td><td>Polls Cloudflare Logpull API (NDJSON) per tenant; respects 2-minute propagation lag; per-tenant zone_id + api_token</td></tr>
         <tr><td>collector</td><td>5515 HTTP / 5514 UDP</td><td>Agentless log collection via HTTP POST or UDP syslog; also accepts Kinesis Firehose deliveries at <code>POST /collect/firehose</code></td></tr>
         <tr><td>api</td><td>8080</td><td>REST API + SSE alert stream + enrollment endpoint</td></tr>
         <tr><td>bootstrap</td><td>—</td><td>PreSync job — creates PostgreSQL schema + ClickHouse tables</td></tr>
