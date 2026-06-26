@@ -177,6 +177,7 @@
       <a href="#services">Service map</a>
       <a href="#streams">Redis streams</a>
       <a href="#storage">Storage backends</a>
+      <a href="#storage-s3">S3 warm-tier archival</a>
     </div>
   </aside>
 
@@ -657,15 +658,21 @@ def verify(body: bytes, secret: str, sig_header: str) -> bool:
       <tbody>
         <tr><td>ingest</td><td>1514 TCP</td><td>Accepts mTLS agent connections, writes to Redis raw stream</td></tr>
         <tr><td>decoder</td><td>—</td><td>Normalises raw events, writes to ClickHouse + decoded stream</td></tr>
-        <tr><td>raw-archiver</td><td>—</td><td>Archives raw events to ClickHouse raw_events table; dual-writes Parquet to S3-compatible object storage when <code>ARCHIVAL_ENABLED=true</code></td></tr>
+        <tr><td>raw-archiver</td><td>—</td><td>Archives raw events to ClickHouse raw_events table; dual-writes date-partitioned Parquet to S3-compatible object storage when <code>S3_BUCKET</code> is set</td></tr>
         <tr><td>rules-engine</td><td>—</td><td>Evaluates decoded events against Sigma rules, emits alerts</td></tr>
         <tr><td>alert-dedup</td><td>—</td><td>Deduplicates alerts via SHA-256 key + TTL in Redis</td></tr>
         <tr><td>alert-indexer</td><td>—</td><td>Persists deduped alerts to ClickHouse + PostgreSQL</td></tr>
         <tr><td>compliance-tagger</td><td>—</td><td>Maps MITRE ATT&amp;CK tags → CIS Controls v8 + NIST 800-53</td></tr>
         <tr><td>response-orchestrator</td><td>—</td><td>Publishes deduped alerts to RabbitMQ exchange</td></tr>
         <tr><td>notification-dispatcher</td><td>—</td><td>Dispatches alert notifications to configured destinations (Slack, Email, Webhook, PagerDuty, Teams)</td></tr>
+        <tr><td>behavioral-detector</td><td>—</td><td>Baseline behavioural profiles per agent; anomaly detection for process exec, auth, and event rates (UEBA)</td></tr>
+        <tr><td>enricher</td><td>—</td><td>Enriches alerts with AbuseIPDB, GreyNoise, VirusTotal threat intel; caches results in Redis</td></tr>
         <tr><td>vuln-service</td><td>—</td><td>Downloads NVD CVE feed, matches against agent package inventory</td></tr>
-        <tr><td>collector</td><td>5515 HTTP / 5514 UDP</td><td>Agentless log collection via HTTP POST or UDP syslog</td></tr>
+        <tr><td>trivy-watcher</td><td>—</td><td>Reads Trivy Operator VulnerabilityReport CRDs and persists image scan findings to PostgreSQL</td></tr>
+        <tr><td>aws-ingest</td><td>—</td><td>Polls CloudTrail and GuardDuty for AWS cloud events; writes to raw stream as virtual agent events</td></tr>
+        <tr><td>azure-ingest</td><td>—</td><td>Polls Azure Activity Log via Management REST API; writes to raw stream</td></tr>
+        <tr><td>gcp-ingest</td><td>—</td><td>Polls GCP Cloud Audit Logs via Logging REST API; writes to raw stream</td></tr>
+        <tr><td>collector</td><td>5515 HTTP / 5514 UDP</td><td>Agentless log collection via HTTP POST or UDP syslog; also accepts Kinesis Firehose deliveries at <code>POST /collect/firehose</code></td></tr>
         <tr><td>api</td><td>8080</td><td>REST API + SSE alert stream + enrollment endpoint</td></tr>
         <tr><td>bootstrap</td><td>—</td><td>PreSync job — creates PostgreSQL schema + ClickHouse tables</td></tr>
         <tr><td>dashboard</td><td>80</td><td>React SPA served by nginx, proxies /api to siem-api</td></tr>
@@ -682,15 +689,39 @@ siem:deduped-alerts  → response-orchestrator, notification-dispatcher</code></
     </div>
 
     <h2 id="storage">Storage backends</h2>
-    <h3>ClickHouse</h3>
+    <h3>ClickHouse (hot tier)</h3>
     <ul>
-      <li><strong>forge_siem.events</strong> — decoded events, 90-day TTL</li>
-      <li><strong>forge_siem.alerts</strong> — alert records, 365-day TTL</li>
-      <li><strong>forge_siem.raw_events</strong> — raw agent payloads, 90-day TTL</li>
+      <li><strong>forge_siem.events</strong> — decoded events, 365-day TTL (configurable via <code>CLICKHOUSE_EVENTS_TTL_DAYS</code>)</li>
+      <li><strong>forge_siem.alerts</strong> — alert records, 365-day TTL (configurable via <code>CLICKHOUSE_ALERTS_TTL_DAYS</code>)</li>
+      <li><strong>forge_siem.raw_events</strong> — raw agent payloads, 365-day TTL</li>
     </ul>
 
+    <h3 id="storage-s3">S3-compatible object storage (warm tier)</h3>
+    <p>When <code>S3_BUCKET</code> is configured, raw-archiver dual-writes every raw event batch to S3-compatible storage in addition to ClickHouse. Writes are fire-and-forget (non-blocking) — ClickHouse ack is not delayed.</p>
+    <ul>
+      <li><strong>Format:</strong> Apache Parquet — schema: <code>agent_id</code>, <code>type</code>, <code>payload</code> (JSON string), <code>timestamp_ms</code></li>
+      <li><strong>Partitioning:</strong> <code>&lt;prefix&gt;/year=YYYY/month=MM/day=DD/&lt;nanos&gt;.parquet</code> — Hive-compatible, queryable directly by Athena or DuckDB without a catalog</li>
+      <li><strong>Compatible providers:</strong> AWS S3, Cloudflare R2, Backblaze B2, MinIO. Set <code>S3_ENDPOINT</code> for non-AWS providers; set <code>S3_FORCE_PATH_STYLE=true</code> for MinIO.</li>
+    </ul>
+
+    <table>
+      <thead><tr><th>Env var</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>S3_BUCKET</code></td><td>— (disabled)</td><td>Bucket name. Required to enable warm-tier writes.</td></tr>
+        <tr><td><code>S3_REGION</code></td><td><code>auto</code></td><td>Region. Use <code>auto</code> for R2.</td></tr>
+        <tr><td><code>S3_PREFIX</code></td><td><code>raw-events</code></td><td>Key prefix prepended to all objects.</td></tr>
+        <tr><td><code>S3_ENDPOINT</code></td><td>AWS default</td><td>Override endpoint URL for R2, B2, or MinIO.</td></tr>
+        <tr><td><code>S3_FORCE_PATH_STYLE</code></td><td><code>false</code></td><td>Set <code>true</code> for MinIO.</td></tr>
+        <tr><td><code>S3_ACCESS_KEY_ID</code></td><td>—</td><td>Access key ID.</td></tr>
+        <tr><td><code>S3_SECRET_ACCESS_KEY</code></td><td>—</td><td>Secret access key.</td></tr>
+      </tbody>
+    </table>
+
     <h3>PostgreSQL</h3>
-    <p>Operational state: agents, rules, CVEs, cases, analyst accounts, audit log, enrollment tokens. Schema applied idempotently by bootstrap on every deploy.</p>
+    <p>Operational state: agents, rules, CVEs, cases, analyst accounts, audit log, enrollment tokens, behavioral profiles, notification destinations. Schema applied idempotently by bootstrap on every deploy.</p>
+
+    <h3>Redis</h3>
+    <p>Streams (MAXLEN-trimmed), alert deduplication TTL keys, enrichment result cache, agent command queues, and behavioral profile rate-limit buckets.</p>
 
   </main>
 </div>

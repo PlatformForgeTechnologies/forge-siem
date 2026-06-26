@@ -141,7 +141,7 @@
           <div class="rm-item-icon rm-item-icon--done"></div>
           <div class="rm-item-body">
             <h3>Active response framework</h3>
-            <p>HMAC-signed commands delivered via Redis, RabbitMQ-based response orchestration, and Slack webhook notifications for high-severity alerts.</p>
+            <p>HMAC-signed commands delivered via Redis, RabbitMQ-based response orchestration, and multi-channel alert notifications — Slack, email, webhook, PagerDuty, and Microsoft Teams.</p>
           </div>
         </div>
         <div class="rm-item">
@@ -189,10 +189,38 @@
           </div>
         </div>
         <div class="rm-item">
-          <div class="rm-item-icon rm-item-icon--current"></div>
+          <div class="rm-item-icon rm-item-icon--done"></div>
           <div class="rm-item-body">
             <h3>Enrichment worker</h3>
-            <p>Automated alert enrichment with AbuseIPDB, GreyNoise, VirusTotal, and geolocation. Observable extraction for IPs, hashes, and domains.</p>
+            <p>Automated alert enrichment with AbuseIPDB, GreyNoise, VirusTotal, and geolocation. Observable extraction for IPs, hashes, and domains. Results cached in Redis.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Behavioral detection (UEBA)</h3>
+            <p>Per-agent behavioural baselines for process execution, authentication, and event rates. Anomalous deviations from baseline generate additional alerts without requiring a matching Sigma rule.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>SAML / SSO</h3>
+            <p>SP-initiated SAML 2.0 for enterprise identity provider integration. Auto-provisioned analyst accounts on first login. Configurable SP certificate via platform settings.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>AWS, Azure, GCP cloud ingest</h3>
+            <p>Polling-based cloud log ingestion: CloudTrail + GuardDuty for AWS; Activity Log for Azure; Cloud Audit Logs for GCP. Each cloud provider runs as an independent ingest service writing into the same event pipeline as agent events.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Multi-channel notifications</h3>
+            <p>Alert destinations for Slack, email (via SMTP), generic webhook (with HMAC-SHA256 signature), PagerDuty (Events API v2), and Microsoft Teams. Per-destination severity filters and rule ID filters.</p>
           </div>
         </div>
         <div class="rm-item">
@@ -222,26 +250,42 @@
     <!-- ── Phase: Q4 2026 — Cloud & Data Plane ─────────────────────────── -->
     <div class="rm-phase">
       <div class="rm-phase-header">
-        <div class="rm-phase-marker rm-phase-marker--planned"></div>
+        <div class="rm-phase-marker rm-phase-marker--current">
+          <span class="rm-pulse"></span>
+        </div>
         <div>
           <div class="rm-phase-date">Q4 2026</div>
           <h2 class="rm-phase-title">Cloud & Data Plane</h2>
         </div>
-        <span class="rm-status rm-status--planned">Planned</span>
+        <span class="rm-status rm-status--current">In Progress</span>
       </div>
       <div class="rm-items">
         <div class="rm-item">
-          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-icon rm-item-icon--done"></div>
           <div class="rm-item-body">
-            <h3>Sync agent</h3>
-            <p>Outbound-only service in customer's data plane. Rule sync, alert metadata push, and WebSocket query proxy — no inbound ports needed.</p>
+            <h3>Outbound relay (BYOC tunnel)</h3>
+            <p>Outbound-only WebSocket relay in the customer data plane dials <code>wss://api.platformforgegroup.com/relay/connect</code> at startup. Forge routes dashboard queries back over the established tunnel — no inbound ports or firewall rules needed in the customer environment.</p>
           </div>
         </div>
         <div class="rm-item">
-          <div class="rm-item-icon rm-item-icon--planned"></div>
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>S3 warm-tier archival</h3>
+            <p>Raw-archiver dual-writes date-partitioned Parquet to any S3-compatible store (Cloudflare R2, Backblaze B2, AWS S3, MinIO) in a fire-and-forget goroutine. Athena- and DuckDB-compatible schema for long-term log retention beyond the ClickHouse hot tier.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--done"></div>
+          <div class="rm-item-body">
+            <h3>Public BYOC Helm charts</h3>
+            <p>Agent DaemonSet and BYOC data plane charts published to the public <a href="https://github.com/PlatformForgeTechnologies/forge-siem-charts" target="_blank" rel="noopener">forge-siem-charts</a> repository. Customers deploy via <code>helm install</code> without access to the private platform source.</p>
+          </div>
+        </div>
+        <div class="rm-item">
+          <div class="rm-item-icon rm-item-icon--current"></div>
           <div class="rm-item-body">
             <h3>AWS BYOC integration</h3>
-            <p>One-click CloudFormation for IAM cross-account role. Helm chart deploys into customer EKS. S3 for raw log archival.</p>
+            <p>Helm chart deploys into customer EKS. S3 archival live. CloudFormation one-click IAM role automation and cross-account setup in progress.</p>
           </div>
         </div>
         <div class="rm-item">
@@ -255,7 +299,7 @@
           <div class="rm-item-icon rm-item-icon--planned"></div>
           <div class="rm-item-body">
             <h3>Forge-hosted launch</h3>
-            <p>platformforge.com goes live — fully managed SIEM with zero-ops deployment. Per-agent and storage-based pricing.</p>
+            <p>app.platformforgegroup.com goes live — fully managed SIEM with zero-ops deployment. Per-agent and storage-based pricing.</p>
           </div>
         </div>
       </div>
