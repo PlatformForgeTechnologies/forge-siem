@@ -164,6 +164,15 @@
       <a href="#upgrades">Upgrades</a>
     </div>
     <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Notifications</div>
+      <a href="#notifications-overview">Overview</a>
+      <a href="#notifications-slack">Slack</a>
+      <a href="#notifications-email">Email</a>
+      <a href="#notifications-webhook">Generic webhook</a>
+      <a href="#notifications-pagerduty">PagerDuty</a>
+      <a href="#notifications-teams">Microsoft Teams</a>
+    </div>
+    <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Reference</div>
       <a href="#services">Service map</a>
       <a href="#streams">Redis streams</a>
@@ -535,6 +544,113 @@ helm upgrade siem ./forge-siem-platform/k8s-apps/siem \
 
     <!-- ── Reference ── -->
 
+    <!-- ── Notifications ── -->
+
+    <h2 id="notifications-overview">Notifications</h2>
+    <p>Forge SIEM dispatches alert notifications when a deduplicated alert matches the severity filter of a configured destination. Destinations are managed in the dashboard under <strong>Reports → Notification destinations</strong>. Each destination has a name, a type, a status (active / paused), and a per-severity filter.</p>
+
+    <p>The notification dispatcher only fires for <strong>high</strong> and <strong>critical</strong> severity alerts by default. Per-destination severity filters can narrow this further (e.g. critical-only for PagerDuty paging).</p>
+
+    <div class="note">
+      <strong>SMTP required for email:</strong> Configure your SMTP server in <strong>Settings → Platform Settings → SMTP</strong> before adding email destinations. The SMTP config is shared across all email destinations in your tenant.
+    </div>
+
+    <h2 id="notifications-slack">Slack</h2>
+    <p>Create an <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener">Incoming Webhook</a> in your Slack workspace and paste the URL into the destination form.</p>
+
+    <table>
+      <thead><tr><th>Config field</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>webhook_url</td><td>Yes</td><td>Slack Incoming Webhook URL (<code>https://hooks.slack.com/services/…</code>)</td></tr>
+        <tr><td>channel</td><td>No</td><td>Override the channel set on the webhook app (e.g. <code>#soc-alerts</code>)</td></tr>
+        <tr><td>username</td><td>No</td><td>Bot display name (default: Forge SIEM)</td></tr>
+        <tr><td>severities</td><td>No</td><td>Comma-separated filter: <code>critical, high</code>. Empty = all allowed severities.</td></tr>
+        <tr><td>rule_ids</td><td>No</td><td>Only notify when the alert matches one of these rule IDs (comma-separated)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="notifications-email">Email</h2>
+    <p>Sends a plain-text alert email via the SMTP server configured in Platform Settings. Multiple email destinations can be created for different recipients or severity levels.</p>
+
+    <table>
+      <thead><tr><th>Config field</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>to_address</td><td>Yes</td><td>Recipient email address</td></tr>
+        <tr><td>severities</td><td>No</td><td>Comma-separated severity filter</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="notifications-webhook">Generic webhook</h2>
+    <p>Posts a JSON payload to any URL — useful for routing alerts into Jira, n8n, Zapier, Make, or any custom receiver. The payload is the same structure for every alert.</p>
+
+    <div class="code-block">
+      <div class="code-bar"><span>JSON payload</span></div>
+      <pre><code>{
+  "event":         "alert.fired",
+  "alert_id":      "3f9a…",
+  "title":         "Suspicious process execution",
+  "severity":      "critical",
+  "agent_id":      "agent-abc123",
+  "rule_id":       "rule-xyz",
+  "mitre_tags":    ["T1059.001"],
+  "timestamp":     "2026-06-24T10:00:00Z",
+  "dashboard_url": "https://app.platformforgegroup.com/alerts/3f9a…"
+}</code></pre>
+    </div>
+
+    <table>
+      <thead><tr><th>Config field</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>url</td><td>Yes</td><td>Target URL — must accept HTTP POST with <code>Content-Type: application/json</code></td></tr>
+        <tr><td>secret</td><td>No</td><td>If set, Forge adds an <code>X-Forge-Signature</code> header — HMAC-SHA256 of the request body, hex-encoded. Verify this in your receiver to authenticate the request.</td></tr>
+        <tr><td>severities</td><td>No</td><td>Comma-separated severity filter</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Signature verification example (Python)</h3>
+    <div class="code-block">
+      <div class="code-bar"><span>Python</span></div>
+      <pre><code>import hmac, hashlib
+
+def verify(body: bytes, secret: str, sig_header: str) -> bool:
+    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, sig_header)</code></pre>
+    </div>
+
+    <h2 id="notifications-pagerduty">PagerDuty</h2>
+    <p>Sends events to the <a href="https://developer.pagerduty.com/docs/ZG9jOjExMDI5NTgx-send-an-alert-event" target="_blank" rel="noopener">PagerDuty Events API v2</a>. Create a service in PagerDuty with an <strong>Events API v2</strong> integration and copy the <strong>Integration Key</strong>.</p>
+
+    <p>Forge sends a <code>trigger</code> action when the alert fires. The dedup key is <code>forge-siem-&lt;alert_id&gt;</code> — if the same alert fires again before it is resolved in PagerDuty, PagerDuty will group it rather than open a second incident.</p>
+
+    <table>
+      <thead><tr><th>PagerDuty severity mapping</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Forge: <code>critical</code></td><td>PagerDuty: <code>critical</code></td></tr>
+        <tr><td>Forge: <code>high</code></td><td>PagerDuty: <code>error</code></td></tr>
+        <tr><td>Forge: <code>medium</code></td><td>PagerDuty: <code>warning</code></td></tr>
+        <tr><td>Forge: <code>low</code> / <code>info</code></td><td>PagerDuty: <code>info</code></td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <thead><tr><th>Config field</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>integration_key</td><td>Yes</td><td>PagerDuty Events API v2 integration key (routing key) — 32-character string from your service integration</td></tr>
+        <tr><td>severities</td><td>No</td><td>Optional filter; PagerDuty destinations fire for all allowed severities by default</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="notifications-teams">Microsoft Teams</h2>
+    <p>Posts a <a href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook" target="_blank" rel="noopener">Teams Incoming Webhook</a> message card. In Teams, go to the channel settings, add an <strong>Incoming Webhook</strong> connector, and paste the generated URL.</p>
+
+    <table>
+      <thead><tr><th>Config field</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>webhook_url</td><td>Yes</td><td>Teams Incoming Webhook URL (<code>https://&lt;tenant&gt;.webhook.office.com/…</code>)</td></tr>
+        <tr><td>severities</td><td>No</td><td>Comma-separated severity filter</td></tr>
+      </tbody>
+    </table>
+
     <h2 id="services">Service map</h2>
     <table>
       <thead><tr><th>Service</th><th>Port</th><th>Description</th></tr></thead>
@@ -547,7 +663,7 @@ helm upgrade siem ./forge-siem-platform/k8s-apps/siem \
         <tr><td>alert-indexer</td><td>—</td><td>Persists deduped alerts to ClickHouse + PostgreSQL</td></tr>
         <tr><td>compliance-tagger</td><td>—</td><td>Maps MITRE ATT&amp;CK tags → CIS Controls v8 + NIST 800-53</td></tr>
         <tr><td>response-orchestrator</td><td>—</td><td>Publishes deduped alerts to RabbitMQ exchange</td></tr>
-        <tr><td>notification-dispatcher</td><td>—</td><td>Sends Slack webhooks for high/critical alerts</td></tr>
+        <tr><td>notification-dispatcher</td><td>—</td><td>Dispatches alert notifications to configured destinations (Slack, Email, Webhook, PagerDuty, Teams)</td></tr>
         <tr><td>vuln-service</td><td>—</td><td>Downloads NVD CVE feed, matches against agent package inventory</td></tr>
         <tr><td>collector</td><td>5515 HTTP / 5514 UDP</td><td>Agentless log collection via HTTP POST or UDP syslog</td></tr>
         <tr><td>api</td><td>8080</td><td>REST API + SSE alert stream + enrollment endpoint</td></tr>
